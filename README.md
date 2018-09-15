@@ -13,5 +13,4 @@ Benchmarks:
 
     BenchmarkStore-4        	 5000000	       206 ns/op
     BenchmarkLoad-4         	20000000	        80.5 ns/op
-    BenchmarkEvictSetup-4   	       1	1000160367 ns/op
     BenchmarkEvict-4        	300000000	         4.96 ns/op
