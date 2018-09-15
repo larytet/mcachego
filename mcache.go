@@ -209,11 +209,15 @@ func NewPool(t reflect.Type, objectCount int) (p *Pool) {
 	p.objectSize, p.objectCount = objectSize, objectCount
 	p.data = make([]byte, objectSize*objectCount, objectSize*objectCount)
 	p.stack = make([]unsafe.Pointer, objectCount, objectCount)
-	for i := 0; i < objectCount; i += 1 {
-		p.stack[i] = unsafe.Pointer(&p.data[i*objectSize])
-	}
-	p.top = int64(objectCount)
+	p.Reset()
 	return p
+}
+
+func (p *Pool) Reset() {
+	for i := 0; i < p.objectCount; i += 1 {
+		p.stack[i] = unsafe.Pointer(&p.data[i*p.objectSize])
+	}
+	p.top = int64(p.objectCount)
 }
 
 func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {

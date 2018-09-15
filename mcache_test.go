@@ -36,7 +36,48 @@ func TestRemove(t *testing.T) {
 	}
 }
 
-var cache = New(100*1000*1000, int64(TTL))
+type MyData struct {
+	key int
+}
+
+func TestAddCustomType(t *testing.T) {
+	pool := NewPool(reflect.TypeOf(new(MyData)), 1)
+	ptr, ok := pool.Alloc()
+	if !ok {
+		t.Fatalf("Failed to allocate an object from the pool")
+	}
+
+	myData := (*MyData)(ptr)
+	myData.key = 1
+
+	smallCache.Store(Key(myData.key), Object(uintptr(unsafe.Pointer(myData))), Nanotime())
+	time.Sleep(time.Duration(TTL) * time.Millisecond)
+	o, evicted, nextExpiration := smallCache.Evict(Nanotime())
+	if !evicted {
+		t.Fatalf("Failed to evict value from the cache")
+	}
+	if nextExpiration != 0 {
+		t.Fatalf("bad next expiration %v", nextExpiration)
+	}
+	pool.Free(unsafe.Pointer(uintptr(o)))
+}
+
+var cacheSize = 10 * 1000 * 1000
+
+func BenchmarkPoolAlloc(b *testing.B) {
+	pool := NewPool(reflect.TypeOf(new(MyData)), cacheSize)
+	b.N = cacheSize
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, ok := pool.Alloc()
+		if !ok {
+			b.Fatalf("Failed to allocate an object from the pool %d", i)
+		}
+	}
+}
+
+var cache = New(cacheSize, int64(TTL))
 
 func BenchmarkStore(b *testing.B) {
 	now := nanotime()
@@ -78,30 +119,4 @@ func TestRemove1(t *testing.T) {
 	if len(cache.data) > 0 {
 		t.Fatalf("Failed to remove all values from the cache, remains %d", len(cache.data))
 	}
-}
-
-type MyData struct {
-	key int
-}
-
-func TestAddCustomType(t *testing.T) {
-	pool := NewPool(reflect.TypeOf(new(MyData)), 1)
-	ptr, ok := pool.Alloc()
-	if !ok {
-		t.Fatalf("Failed to allocate an object from the pool")
-	}
-
-	myData := (*MyData)(ptr)
-	myData.key = 1
-
-	smallCache.Store(Key(myData.key), Object(uintptr(unsafe.Pointer(myData))), Nanotime())
-	time.Sleep(time.Duration(TTL) * time.Millisecond)
-	o, evicted, nextExpiration := smallCache.Evict(Nanotime())
-	if !evicted {
-		t.Fatalf("Failed to evict value from the cache")
-	}
-	if nextExpiration != 0 {
-		t.Fatalf("bad next expiration %v", nextExpiration)
-	}
-	pool.Free(unsafe.Pointer(uintptr(o)))
 }
