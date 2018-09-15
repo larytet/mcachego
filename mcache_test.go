@@ -36,6 +36,16 @@ func TestRemove(t *testing.T) {
 	}
 }
 
+func TestOverflow(t *testing.T) {
+	smallCache.Reset()
+	if ok := smallCache.Store(0, 0, nanotime()); !ok {
+		t.Fatalf("Failed to store value in the cache")
+	}
+	if ok := smallCache.Store(0, 0, nanotime()); ok {
+		t.Fatalf("Did not fail on overflow")
+	}
+}
+
 type MyData struct {
 	a int
 	b int
