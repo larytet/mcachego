@@ -98,7 +98,7 @@ func New(size int64, ttl int64) *Cache {
 }
 
 func (c *Cache) Len() int {
-	return c.queue.Len()
+	return len(c.data)
 }
 
 func (c *Cache) Store(key Key, o Object) {
@@ -126,7 +126,7 @@ func (c *Cache) Remove(key Key) (ok bool) {
 	return ok
 }
 
-func (c *Cache) RemoveSync(key string) (ok bool) {
+func (c *Cache) RemoveSync(key Key) (ok bool) {
 	c.mutex.Lock()
 	ok = c.Remove(key)
 	c.mutex.Unlock()
@@ -134,18 +134,12 @@ func (c *Cache) RemoveSync(key string) (ok bool) {
 }
 
 func (c *Cache) evict(now int64) (nextExpiration int64, expired bool) {
+	return 0, false
 }
 
 func (c *Cache) Evict(now int64) (nextExpiration int64, expired bool) {
 	c.mutex.Lock()
-	c.evict()
+	nextExpiration, expired = c.evict(now)
 	c.mutex.Unlock()
-}
-
-func (c *Cache) EvictAll(now int64) (nextExpiration int64, expired bool) {
-	c.mutex.Lock()
-	for {
-		c.evict()
-	}
-	c.mutex.Unlock()
+	return nextExpiration, expired
 }
