@@ -45,6 +45,14 @@ func TestRemove(t *testing.T) {
 	if ok {
 		t.Fatalf("Failed to remove value from the cache")
 	}
+
+	_, evicted, nextExpiration = smallCache.Evict(Nanotime())
+	if evicted {
+		t.Fatalf("Evicted from empty cache")
+	}
+	if nextExpiration != 0 {
+		t.Fatalf("bad next expiration %v, should be zero", nextExpiration)
+	}
 }
 
 func TestOverflow(t *testing.T) {
