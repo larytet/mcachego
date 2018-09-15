@@ -8,17 +8,22 @@ import (
 )
 
 type Key int64
+
+// I have three  choices here:
+//  * Allow the user to specify Object type
+//  * Use interface{}
+//  * Use uintptr() to the user defined structures
+// If I use a type and GC safe interface{} somewhere up the stack somebody will have to type assert Object and pay 20ns
+// See https://stackoverflow.com/questions/28024884/does-a-type-assertion-type-switch-have-bad-performance-is-slow-in-go
+// Can I use unsafe pointers to the users objects and cast to int64?
+// See also insane noescape() in https://segment.com/blog/allocation-efficiency-in-high-performance-go-services/
+// Object     interface{}
 type Object int64
 
 // Straight from https://github.com/patrickmn/go-cache
 // Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
 // If I keep the item struct small I can avoid memory pools for items
 type item struct {
-	// somewhere up the stack somebody will have to type assert and pay 20ns
-	// https://stackoverflow.com/questions/28024884/does-a-type-assertion-type-switch-have-bad-performance-is-slow-in-go
-	// Can I use unsafe pointers here and cast to int64?
-	// See also insane noescape() in https://segment.com/blog/allocation-efficiency-in-high-performance-go-services/
-	// Object     interface{}
 	o          Object
 	expiration int64
 }
