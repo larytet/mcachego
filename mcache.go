@@ -91,7 +91,7 @@ type Cache struct {
 
 func New(size int64, ttl int64) *Cache {
 	c := new(Cache)
-	c.data = make(map[string]*PolicyCacheEntry)
+	c.data = make(map[Key]Object)
 	c.ttl = ttl
 	c.pool = newStack(size)
 	return c
