@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-var TTL = 10
+var TTL int64 = 10
 var smallCache = New(1, int64(TTL))
 
 func TestAdd(t *testing.T) {
@@ -22,8 +22,19 @@ func TestAdd(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	smallCache.Reset()
+	start := nanotime()
+	smallCache.Store(0, 0, start)
+	_, evicted, nextExpiration := smallCache.Evict(start)
+	if evicted {
+		t.Fatalf("Evicted entry before it expired")
+	}
+	expectedNextExpiration := ns * TTL
+	if nextExpiration != expectedNextExpiration {
+		t.Fatalf("Expected %d, got %d", expectedNextExpiration, nextExpiration)
+	}
 	time.Sleep(time.Second)
-	_, evicted, nextExpiration := smallCache.Evict(Nanotime())
+	_, evicted, nextExpiration = smallCache.Evict(Nanotime())
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}

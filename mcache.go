@@ -23,8 +23,8 @@ type Object uintptr
 // If I keep the item struct small I can avoid memory pools for items
 // I want a benchmark here: copy vs custom memory pool
 type item struct {
-	o          Object
-	expiration int64
+	o            Object
+	expirationNs int64
 }
 
 type itemFifo struct {
@@ -129,7 +129,7 @@ func (c *Cache) Reset() {
 }
 
 func (c *Cache) Store(key Key, o Object, now int64) bool {
-	c.data[key] = item{o: o, expiration: now + c.ttl}
+	c.data[key] = item{o: o, expirationNs: now + c.ttl}
 	ok := c.fifo.add(key)
 	return ok
 }
@@ -157,7 +157,7 @@ func (c *Cache) evict(now int64) (o Object, expired bool) {
 	key, ok := c.fifo.peek()
 	if ok {
 		i := c.data[key]
-		if (i.expiration - now) < 0 {
+		if (i.expirationNs - now) < 0 {
 			c.fifo.remove()
 			delete(c.data, key)
 			return i.o, true
@@ -169,20 +169,20 @@ func (c *Cache) evict(now int64) (o Object, expired bool) {
 	}
 }
 
-func (c *Cache) Evict(now int64) (o Object, expired bool, nextExpiration int64) {
-	nextExpiration = 0
+func (c *Cache) Evict(now int64) (o Object, expired bool, nextExpirationNs int64) {
+	nextExpirationNs = 0
 	o, expired = c.evict(now)
 	key, ok := c.fifo.peek()
 	if ok {
 		i := c.data[key]
-		nextExpiration = i.expiration - now
+		nextExpirationNs = i.expirationNs - now
 	}
-	return o, expired, nextExpiration
+	return o, expired, nextExpirationNs
 }
 
-func (c *Cache) EvictSync(now int64) (o Object, expired bool, nextExpiration int64) {
+func (c *Cache) EvictSync(now int64) (o Object, expired bool, nextExpirationNs int64) {
 	c.mutex.Lock()
-	o, expired, nextExpiration = c.Evict(now)
+	o, expired, nextExpirationNs = c.Evict(now)
 	c.mutex.Unlock()
-	return o, expired, nextExpiration
+	return o, expired, nextExpirationNs
 }
