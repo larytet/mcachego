@@ -65,6 +65,15 @@ func (s *itemFifo) remove() (i item, ok bool) {
 	}
 }
 
+func (s *itemFifo) peek() (i item, ok bool) {
+	if s.head != s.tail {
+		i = s.data[s.head]
+		return i, true
+	} else {
+		return i, false
+	}
+}
+
 //go:noescape
 //go:linkname nanotime runtime.nanotime
 func nanotime() int64
@@ -101,9 +110,12 @@ func (c *Cache) Len() int {
 	return len(c.data)
 }
 
+var ns = int64(1000 * 1000)
+
 func (c *Cache) Store(key Key, o Object) {
-	i := item{o: o, expiration: nanotime() + c.ttl}
+	i := item{o: o, expiration: ns*nanotime() + c.ttl}
 	c.data[key] = i
+	c.fifo.add(i)
 }
 
 func (c *Cache) StoreSync(key Key, o Object) {
@@ -124,25 +136,27 @@ func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
 	return o, ok
 }
 
-func (c *Cache) Remove(key Key) (ok bool) {
-	delete(c.data, key)
-	return true
-}
-
-func (c *Cache) RemoveSync(key Key) (ok bool) {
-	c.mutex.Lock()
-	ok = c.Remove(key)
-	c.mutex.Unlock()
-	return ok
-}
-
-func (c *Cache) evict(now int64) (nextExpiration int64, expired bool) {
-	return 0, false
+func (c *Cache) evict(now int64) (expired bool) {
+	i, ok := c.fifo.peek()
+	if ok {
+		if (i.expiration - now) < 0 {
+			c.fifo.remove()
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
 }
 
 func (c *Cache) Evict(now int64) (nextExpiration int64, expired bool) {
 	c.mutex.Lock()
-	nextExpiration, expired = c.evict(now)
+	expired = c.evict(now)
+	i, ok := c.fifo.peek()
+	if ok {
+		nextExpiration = i.expiration - now
+	}
 	c.mutex.Unlock()
 	return nextExpiration, expired
 }

@@ -6,3 +6,4 @@ I need the fastest possible implementation with optional synchronising
 * Synchronisation is optional
 * Eviction of expired entries is up to the application
 * Minimalistic API
+* Eviction only via expiration
