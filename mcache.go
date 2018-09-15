@@ -156,38 +156,38 @@ func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
 	return o, ok
 }
 
-func (c *Cache) evict(now int64) (expired bool) {
+func (c *Cache) evict(now int64) (o Object, expired bool) {
 	key, ok := c.fifo.peek()
 	if ok {
 		i := c.data[key]
 		if (i.expiration - now) < 0 {
 			c.fifo.remove()
 			delete(c.data, key)
-			return true
+			return i.o, true
 		} else {
-			return false
+			return 0, false
 		}
 	} else {
-		return false
+		return 0, false
 	}
 }
 
-func (c *Cache) Evict(now int64) (nextExpiration int64, expired bool) {
+func (c *Cache) Evict(now int64) (o Object, expired bool, nextExpiration int64) {
 	nextExpiration = 0
-	expired = c.evict(now)
+	o, expired = c.evict(now)
 	key, ok := c.fifo.peek()
 	if ok {
 		i := c.data[key]
 		nextExpiration = i.expiration - now
 	}
-	return nextExpiration, expired
+	return o, expired, nextExpiration
 }
 
-func (c *Cache) EvictSync(now int64) (nextExpiration int64, expired bool) {
+func (c *Cache) EvictSync(now int64) (o Object, expired bool, nextExpiration int64) {
 	c.mutex.Lock()
-	nextExpiration, expired = c.Evict(now)
+	o, expired, nextExpiration = c.Evict(now)
 	c.mutex.Unlock()
-	return nextExpiration, expired
+	return o, expired, nextExpiration
 }
 
 // I am replacing the whole Go  memory managemnt, It is safer to provide
@@ -222,7 +222,7 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 		top := p.top
 		if atomic.CompareAndSwapInt64(&p.top, top, top-1) {
 			// success, I decremented p.top
-			fmt.Printf("Alloc %p\n", p.data[top-1])
+			fmt.Printf("Alloc %p\n", p.stack[top-1])
 			return p.stack[top-1], true
 		}
 	}

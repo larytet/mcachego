@@ -23,7 +23,7 @@ func TestAdd(t *testing.T) {
 
 func TestRemove(t *testing.T) {
 	time.Sleep(time.Second)
-	nextExpiration, evicted := smallCache.Evict(Nanotime())
+	_, evicted, nextExpiration := smallCache.Evict(Nanotime())
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
@@ -67,8 +67,8 @@ func BenchmarkEvict(b *testing.B) {
 	now = nanotime()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, ok := cache.Evict(now)
-		if !ok {
+		_, expired, _ := cache.Evict(now)
+		if !expired {
 			b.Fatalf("Failed to evict %v", i)
 		}
 	}
@@ -87,11 +87,11 @@ type MyData struct {
 func TestAddCustomType(t *testing.T) {
 	myData := new(MyData)
 	pool := NewPool(reflect.TypeOf(myData), 1)
-	slice, ok := pool.Alloc()
+	ptr, ok := pool.Alloc()
 	if !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
 	}
-	myData = (*MyData)(unsafe.Pointer(&slice))
+	myData = (*MyData)(ptr)
 	myData.key = 1
 	smallCache.Store(Key(myData.key), Object(uintptr(unsafe.Pointer(myData))), nanotime())
 }
