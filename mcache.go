@@ -1,10 +1,9 @@
 package mcache
 
 import (
-	_ "fmt"
+	_ "fmt" // I want to debug from time to time
 	"sync"
-	_ "time"
-	_ "unsafe"
+	_ "unsafe" // I need this for runtime.nanotime()
 )
 
 type Key int64
