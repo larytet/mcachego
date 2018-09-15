@@ -216,18 +216,19 @@ func NewPool(t reflect.Type, objectCount int) (p *Pool) {
 	return p
 }
 
-func (p *Pool) Alloc() (o ObjectData, ok bool) {
+func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	for p.top > 0 {
 		top := p.top
 		if atomic.CompareAndSwapInt64(&p.top, top, top-1) {
 			// success, I decremented p.top
-			return p.data[top-1], true
+			return unsafe.Pointer(&p.data[top-1]), true
 		}
 	}
 	return nil, false
 }
 
-func (p *Pool) Free(o ObjectData) {
+func (p *Pool) Free(ptr unsafe.Pointer) {
+	o := *(*ObjectData)(ptr)
 	for {
 		top := p.top
 		if atomic.CompareAndSwapInt64(&p.top, top, top+1) {
