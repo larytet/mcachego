@@ -18,7 +18,7 @@ type Key int64
 // Can I use unsafe pointers to the users objects and cast to int64?
 // See also insane noescape() in https://segment.com/blog/allocation-efficiency-in-high-performance-go-services/
 // Object     interface{}
-type Object int64
+type Object uintptr
 
 // Straight from https://github.com/patrickmn/go-cache
 // Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
@@ -192,8 +192,8 @@ func (c *Cache) EvictSync(now int64) (o Object, expired bool, nextExpiration int
 // I am replacing the whole Go  memory managemnt, It is safer (no pun)
 // to provide
 // an API for the application which demos a HowTo
-// Application needs a pool to allocate users objects from
-// and keep them in cache
+// Application needs a pool to allocate users objects
+// and keep the objects in the cache
 // This is a lock free memory pool of objects of the same size
 type Pool struct {
 	top         int64
