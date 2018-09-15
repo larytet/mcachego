@@ -23,6 +23,7 @@ type Object int64
 // Straight from https://github.com/patrickmn/go-cache
 // Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
 // If I keep the item struct small I can avoid memory pools for items
+// I want a benchmark here: copy vs custom memory pool
 type item struct {
 	o          Object
 	expiration int64
