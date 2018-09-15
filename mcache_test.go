@@ -5,8 +5,9 @@ import (
 	"time"
 )
 
-var TTL = 1 * 1000
-var cache = New(100*1000*1000, 1*1000)
+var TTL = 100
+var benchmarksSize = 50 * 1000 * 1000
+var cache = New(int64(benchmarksSize), int64(TTL))
 
 func TestAdd(t *testing.T) {
 	cache.Store(0, 0, nanotime())
@@ -35,6 +36,7 @@ func TestRemove(t *testing.T) {
 }
 
 func BenchmarkStore(b *testing.B) {
+	b.N = benchmarksSize
 	now := nanotime()
 	for i := 0; i < b.N; i++ {
 		cache.Store(Key(i), Object(i), now)
@@ -42,19 +44,24 @@ func BenchmarkStore(b *testing.B) {
 }
 
 func BenchmarkLoad(b *testing.B) {
+	b.N = benchmarksSize
 	for i := 0; i < b.N; i++ {
 		cache.Load(Key(i))
 	}
 }
 
 func TestEvictSetup(t *testing.T) {
-	time.Sleep(time.Second)
+	time.Sleep(time.Duration(2*TTL) * time.Millisecond)
 }
 
 func BenchmarkEvict(b *testing.B) {
 	now := nanotime()
+	b.N = benchmarksSize
 	for i := 0; i < b.N; i++ {
-		cache.Evict(now)
+		_, ok := cache.Evict(now)
+		if !ok {
+			b.Fatalf("Failed to evict %v", i)
+		}
 	}
 }
 

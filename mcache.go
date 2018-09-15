@@ -30,7 +30,7 @@ type itemFifo struct {
 
 func newFifo(size int64) *itemFifo {
 	s := new(itemFifo)
-	s.data = make([]Key, size, size)
+	s.data = make([]Key, size+1, size+1)
 	s.head = 0
 	s.tail = 0
 	return s

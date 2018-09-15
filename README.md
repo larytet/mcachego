@@ -11,6 +11,6 @@ I need the fastest possible implementation with optional synchronising
 
 Benchmarks:
 
-    BenchmarkStore-4        	 5000000	       206 ns/op
-    BenchmarkLoad-4         	20000000	        80.5 ns/op
-    BenchmarkEvict-4        	300000000	         4.96 ns/op
+	BenchmarkStore-4   	50000000	       282 ns/op
+	BenchmarkLoad-4    	50000000	       134 ns/op
+	BenchmarkEvict-4   	50000000	       231 ns/op
