@@ -114,8 +114,7 @@ func (c *Cache) Len() int {
 }
 
 func (c *Cache) Store(key Key, o Object, now int64) {
-	i := item{o: o, expiration: now + c.ttl}
-	c.data[key] = i
+	c.data[key] = item{o: o, expiration: now + c.ttl}
 	c.fifo.add(key)
 }
 
