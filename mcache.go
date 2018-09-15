@@ -1,9 +1,10 @@
 package mcache
 
 import (
+	"reflect"
 	"sync"
 	"sync/atomic"
-	_ "unsafe" // I need this for runtime.nanotime()
+	"unsafe" // I need this for runtime.nanotime()
 )
 
 type Key int64
@@ -203,9 +204,10 @@ type Pool struct {
 	objectCount int
 }
 
-func NewPool(objectSize, objectCount int) (p *Pool) {
-	p.objectSize, p.objectCount = objectSize, objectCount
+func NewPool(t reflect.Type, objectCount int) (p *Pool) {
+	objectSize := int(unsafe.Sizeof(t))
 	p = new(Pool)
+	p.objectSize, p.objectCount = objectSize, objectCount
 	p.data = make([]ObjectData, objectCount, objectCount)
 	for i := 0; i < objectCount; i += 1 {
 		p.data[i] = make([]byte, objectSize, objectSize)

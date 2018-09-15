@@ -1,8 +1,10 @@
 package mcache
 
 import (
+	"reflect"
 	"testing"
 	"time"
+	"unsafe"
 )
 
 var TTL = 10
@@ -78,13 +80,18 @@ func TestRemove1(t *testing.T) {
 	}
 }
 
+type MyData struct {
+	key int
+}
+
 func TestAddCustomType(t *testing.T) {
-	cache.Store(0, 0, nanotime())
-	v, ok := cache.Load(0)
+	myData := new(MyData)
+	pool := NewPool(reflect.TypeOf(myData), 1)
+	slice, ok := pool.Alloc()
 	if !ok {
-		t.Fatalf("Failed to load value from the cache")
+		t.Fatalf("Failed to allocate an object from the pool")
 	}
-	if v != 0 {
-		t.Fatalf("Wrong value %v instead of %v", v, 0)
-	}
+	myData = (*MyData)(unsafe.Pointer(&slice))
+	myData.key = 1
+	smallCache.Store(Key(myData.key), Object(uintptr(unsafe.Pointer(myData))), nanotime())
 }
