@@ -101,7 +101,7 @@ type Cache struct {
 	data  map[Key]item
 	mutex sync.RWMutex
 	ttl   int64
-	// pool of preallocted items
+	// FIFO of the items to support eviction of the expired entries
 	fifo *itemFifo
 }
 
