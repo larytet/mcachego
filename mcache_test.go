@@ -34,25 +34,36 @@ func TestRemove(t *testing.T) {
 	}
 }
 
-var benchmarksSize = 10
-var cache = New(benchmarksSize, int64(TTL))
+var cache = New(10*1000*1000, int64(TTL))
 
 func BenchmarkStore(b *testing.B) {
-	b.N = benchmarksSize
+	now := nanotime()
+	cache.Reset()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cache.Store(Key(i), Object(i), now)
+	}
+}
+
+func BenchmarkLoad(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		cache.Load(Key(i))
+	}
+}
+
+func BenchmarkEvict(b *testing.B) {
 	cache.Reset()
 	now := nanotime()
 	for i := 0; i < b.N; i++ {
 		cache.Store(Key(i), Object(i), now)
 	}
-	for i := 0; i < b.N; i++ {
-		cache.Load(Key(i))
-	}
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
 	now = nanotime()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, ok := cache.Evict(now)
 		if !ok {
-			b.Fatalf("Failed to evict %v %v %v", i, cache.fifo.head, cache.fifo.tail)
+			b.Fatalf("Failed to evict %v", i)
 		}
 	}
 }
