@@ -50,7 +50,7 @@ func TestAddCustomType(t *testing.T) {
 	myData := (*MyData)(ptr)
 	myData.key = 1
 
-	smallCache.Store(Key(myData.key), Object(uintptr(unsafe.Pointer(myData))), Nanotime())
+	smallCache.Store(Key(myData.key), Object(uintptr(ptr)), Nanotime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
 	o, evicted, nextExpiration := smallCache.Evict(Nanotime())
 	if !evicted {
