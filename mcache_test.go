@@ -37,8 +37,8 @@ func TestRemove(t *testing.T) {
 }
 
 type MyData struct {
-	key int
-	d   int
+	a int
+	b int
 }
 
 func TestAddCustomType(t *testing.T) {
@@ -50,10 +50,10 @@ func TestAddCustomType(t *testing.T) {
 	t.Logf("Allocated %p", ptr)
 
 	myData := (*MyData)(ptr)
-	myData.key = 1
-	myData.d = 2
+	myData.a = 1
+	myData.b = 2
 
-	smallCache.Store(Key(myData.key), Object(ptr), Nanotime())
+	smallCache.Store(0, Object(ptr), Nanotime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
 	o, evicted, nextExpiration := smallCache.Evict(Nanotime())
 	if !evicted {
@@ -63,7 +63,7 @@ func TestAddCustomType(t *testing.T) {
 		t.Fatalf("bad next expiration %v", nextExpiration)
 	}
 	myData = (*MyData)(unsafe.Pointer(o))
-	if myData.key != 1 || myData.d != 2 {
+	if myData.a != 1 || myData.b != 2 {
 		t.Fatalf("Failed to recover the original data %v", myData)
 	}
 	if ok = pool.Free(unsafe.Pointer(o)); !ok {
