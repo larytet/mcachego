@@ -98,10 +98,12 @@ type Cache struct {
 	fifo *itemFifo
 }
 
+var ns = int64(1000 * 1000)
+
 func New(size int64, ttl int64) *Cache {
 	c := new(Cache)
 	c.data = make(map[Key]item)
-	c.ttl = ttl
+	c.ttl = ns * ttl
 	c.fifo = newFifo(size)
 	return c
 }
@@ -110,10 +112,8 @@ func (c *Cache) Len() int {
 	return len(c.data)
 }
 
-var ns = int64(1000 * 1000)
-
 func (c *Cache) Store(key Key, o Object) {
-	i := item{o: o, expiration: ns*nanotime() + c.ttl}
+	i := item{o: o, expiration: nanotime() + c.ttl}
 	c.data[key] = i
 	c.fifo.add(i)
 }
