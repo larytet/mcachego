@@ -38,6 +38,7 @@ func TestRemove(t *testing.T) {
 
 type MyData struct {
 	key int
+	d   int
 }
 
 func TestAddCustomType(t *testing.T) {
@@ -50,6 +51,7 @@ func TestAddCustomType(t *testing.T) {
 
 	myData := (*MyData)(ptr)
 	myData.key = 1
+	myData.d = 2
 
 	smallCache.Store(Key(myData.key), Object(ptr), Nanotime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
@@ -59,6 +61,10 @@ func TestAddCustomType(t *testing.T) {
 	}
 	if nextExpiration != 0 {
 		t.Fatalf("bad next expiration %v", nextExpiration)
+	}
+	myData = (*MyData)(unsafe.Pointer(o))
+	if myData.key != 1 || myData.d != 2 {
+		t.Fatalf("Failed to recover the original data %v", myData)
 	}
 	if ok = pool.Free(unsafe.Pointer(o)); !ok {
 		t.Fatalf("Failed to free ptr %v", o)
