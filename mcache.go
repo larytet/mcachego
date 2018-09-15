@@ -2,6 +2,7 @@ package mcache
 
 import (
 	"sync"
+	"sync/atomic"
 	_ "unsafe" // I need this for runtime.nanotime()
 )
 
@@ -196,7 +197,7 @@ func (c *Cache) EvictSync(now int64) (nextExpiration int64, expired bool) {
 type ObjectData []byte
 
 type Pool struct {
-	top         int
+	top         int64
 	data        []ObjectData
 	objectSize  int
 	objectCount int
@@ -209,19 +210,28 @@ func NewPool(objectSize, objectCount int) (p *Pool) {
 	for i := 0; i < objectCount; i += 1 {
 		p.data[i] = make([]byte, objectSize, objectSize)
 	}
-	p.top = objectCount
+	p.top = int64(objectCount)
 	return p
 }
 
 func (p *Pool) Alloc() (o ObjectData, ok bool) {
-	if p.top > 0 {
-		p.top -= 1
-		return p.data[p.top], true
+	for p.top > 0 {
+		top := p.top
+		if atomic.CompareAndSwapInt64(&p.top, top, top-1) {
+			// success, I decremented p.top
+			return p.data[top-1], true
+		}
 	}
 	return nil, false
 }
 
 func (p *Pool) Free(o ObjectData) {
-	p.data[p.top] = o
-	p.top += 1
+	for {
+		top := p.top
+		if atomic.CompareAndSwapInt64(&p.top, top, top+1) {
+			// success, I incremented p.top
+			p.data[top] = o
+			return
+		}
+	}
 }
