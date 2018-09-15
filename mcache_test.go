@@ -70,3 +70,14 @@ func TestRemove1(t *testing.T) {
 		t.Fatalf("Failed to remove all values from the cache, remains %d", len(cache.data))
 	}
 }
+
+func TestAddCustomType(t *testing.T) {
+	cache.Store(0, 0, nanotime())
+	v, ok := cache.Load(0)
+	if !ok {
+		t.Fatalf("Failed to load value from the cache")
+	}
+	if v != 0 {
+		t.Fatalf("Wrong value %v instead of %v", v, 0)
+	}
+}

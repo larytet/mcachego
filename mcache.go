@@ -175,3 +175,8 @@ func (c *Cache) EvictSync(now int64) (nextExpiration int64, expired bool) {
 	c.mutex.Unlock()
 	return nextExpiration, expired
 }
+
+// I am replacing the whole Go  memory managemnt, It is safer to provide
+// an APIfor the application
+// Application needs a pool to allocate users objects from
+// and keep them in cache
