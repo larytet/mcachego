@@ -93,5 +93,14 @@ func TestAddCustomType(t *testing.T) {
 	}
 	myData = (*MyData)(ptr)
 	myData.key = 1
-	smallCache.Store(Key(myData.key), Object(uintptr(unsafe.Pointer(myData))), nanotime())
+	smallCache.Store(Key(myData.key), Object(uintptr(unsafe.Pointer(myData))), Nanotime())
+	time.Sleep(time.Duration(TTL) * time.Millisecond)
+	o, evicted, nextExpiration := smallCache.Evict(Nanotime())
+	if !evicted {
+		t.Fatalf("Failed to evict value from the cache")
+	}
+	if nextExpiration != 0 {
+		t.Fatalf("bad next expiration %v", nextExpiration)
+	}
+	pool.Free(unsafe.Pointer(uintptr(o)))
 }

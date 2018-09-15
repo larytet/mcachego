@@ -1,7 +1,6 @@
 package mcache
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -222,7 +221,6 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 		top := p.top
 		if atomic.CompareAndSwapInt64(&p.top, top, top-1) {
 			// success, I decremented p.top
-			fmt.Printf("Alloc %p\n", p.stack[top-1])
 			return p.stack[top-1], true
 		}
 	}
@@ -234,7 +232,6 @@ func (p *Pool) Free(ptr unsafe.Pointer) {
 		top := p.top
 		if atomic.CompareAndSwapInt64(&p.top, top, top+1) {
 			// success, I incremented p.top
-			fmt.Printf("Free %p\n", ptr)
 			p.stack[top] = ptr
 			return
 		}
