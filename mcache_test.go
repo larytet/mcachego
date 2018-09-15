@@ -47,7 +47,7 @@ func BenchmarkLoad(b *testing.B) {
 	}
 }
 
-func BenchmarkEvictSetup(b *testing.B) {
+func TestEvictSetup(t *testing.T) {
 	time.Sleep(time.Second)
 }
 
