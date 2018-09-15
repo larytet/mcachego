@@ -128,15 +128,17 @@ func (c *Cache) Reset() {
 	c.data = make(map[Key]item, c.size)
 }
 
-func (c *Cache) Store(key Key, o Object, now int64) {
+func (c *Cache) Store(key Key, o Object, now int64) bool {
 	c.data[key] = item{o: o, expiration: now + c.ttl}
-	c.fifo.add(key)
+	ok := c.fifo.add(key)
+	return ok
 }
 
-func (c *Cache) StoreSync(key Key, o Object) {
+func (c *Cache) StoreSync(key Key, o Object) bool {
 	c.mutex.Lock()
-	c.Store(key, o, nanotime())
+	ok := c.Store(key, o, nanotime())
 	c.mutex.Unlock()
+	return ok
 }
 
 func (c *Cache) Load(key Key) (o Object, ok bool) {

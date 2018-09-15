@@ -41,7 +41,9 @@ func BenchmarkStore(b *testing.B) {
 	cache.Reset()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cache.Store(Key(i), Object(i), now)
+		if ok := cache.Store(Key(i), Object(i), now); !ok {
+			b.Fatalf("Failed to add item %d", i)
+		}
 	}
 }
 
@@ -55,7 +57,9 @@ func BenchmarkEvict(b *testing.B) {
 	cache.Reset()
 	now := nanotime()
 	for i := 0; i < b.N; i++ {
-		cache.Store(Key(i), Object(i), now)
+		if ok := cache.Store(Key(i), Object(i), now); !ok {
+			b.Fatalf("Failed to add item %d", i)
+		}
 	}
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
 	now = nanotime()
