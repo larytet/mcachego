@@ -59,7 +59,7 @@ func TestAddCustomType(t *testing.T) {
 	if nextExpiration != 0 {
 		t.Fatalf("bad next expiration %v", nextExpiration)
 	}
-	pool.Free(unsafe.Pointer(uintptr(o)))
+	pool.Free(unsafe.Pointer(o))
 }
 
 func BenchmarkPoolAlloc(b *testing.B) {
