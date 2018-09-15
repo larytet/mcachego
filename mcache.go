@@ -16,7 +16,8 @@ type Object int64
 type item struct {
 	// somewhere up the stack somebody will have to type assert and pay 20ns
 	// https://stackoverflow.com/questions/28024884/does-a-type-assertion-type-switch-have-bad-performance-is-slow-in-go
-	// Can I use unsafe pointers here?
+	// Can I use unsafe pointers here and cast to int64?
+	// See also insane noescape() in https://segment.com/blog/allocation-efficiency-in-high-performance-go-services/
 	// Object     interface{}
 	o          Object
 	expiration int64
