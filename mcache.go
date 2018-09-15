@@ -14,18 +14,18 @@ type item struct {
 }
 
 type itemStack struct {
-	top int64
+	top  int64
 	data []*item
-} 
+}
 
 type Cache struct {
-   // GC is going to poll the cache entries. I can try map[init]int and cast int to
-    // a (unsafe?) pointer in the arrays of strings and structures.
+	// GC is going to poll the cache entries. I can try map[init]int and cast int to
+	// a (unsafe?) pointer in the arrays of strings and structures.
 	// I keep an address of the "item" allocated from a pool
 	data  map[string]int64
 	queue list.List
 	mutex sync.RWMutex
-	ttl int64
+	ttl   int64
 	// pool of preallocted items
 	pool itemStack
 }
@@ -51,10 +51,10 @@ func (c *Cache) StoreSync(key string, o interface{}) {
 	c.mutex.Unlock()
 }
 
-func (c *Cache) Load(key string) (o interface{}, bool) {
+func (c *Cache) Load(key string) (o interface{}, ok bool) {
 }
 
-func (c *Cache) LoadSync(key string) (o interface{}, bool) {
+func (c *Cache) LoadSync(key string) (o interface{}, ok bool) {
 	c.mutex.Lock()
 	c.Load(key)
 	c.mutex.Unlock()
@@ -79,7 +79,7 @@ func (c *Cache) Evict(now int64) (nextExpiration int64, expired bool) {
 func (c *Cache) EvictAll(now int64) (nextExpiration int64, expired bool) {
 	c.mutex.Lock()
 	for {
-	c.evict()
+		c.evict()
 	}
 	c.mutex.Unlock()
 }
