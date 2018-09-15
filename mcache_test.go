@@ -62,11 +62,10 @@ func TestAddCustomType(t *testing.T) {
 	pool.Free(unsafe.Pointer(uintptr(o)))
 }
 
-var cacheSize = 10 * 1000 * 1000
-
 func BenchmarkPoolAlloc(b *testing.B) {
-	pool := NewPool(reflect.TypeOf(new(MyData)), cacheSize)
-	b.N = cacheSize
+	poolSize := 10 * 1000 * 1000
+	pool := NewPool(reflect.TypeOf(new(MyData)), poolSize)
+	b.N = poolSize
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -77,6 +76,7 @@ func BenchmarkPoolAlloc(b *testing.B) {
 	}
 }
 
+var cacheSize = 10 * 1000 * 1000
 var cache = New(cacheSize, int64(TTL))
 
 func BenchmarkStore(b *testing.B) {
