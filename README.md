@@ -1,6 +1,6 @@
 Yet another Go cache. I need the fastest possible implementation with optional synchronizaton
 
-* Carefully avoid allocations from the heap in the Store()/Laod() API
+* Carefully avoid allocations from the heap in the Store()/Load() API
 * Use runtime.nanotime()
 * Synchronisation is optional
 * Eviction of expired entries is up to the application
