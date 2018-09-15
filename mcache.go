@@ -14,8 +14,37 @@ type item struct {
 }
 
 type itemStack struct {
-	top  int64
+	top  int
 	data []*item
+}
+
+func newStack(size int64) *itemStack {
+	s := new(itemStack)
+	s.data = make([]*item, size, size)
+	for i := 0; i < size; i++ {
+		data[i] = &item{nil, 0}
+	}
+	s.top = size
+	return s
+}
+
+func (s *itemStack) pop() (*item, bool) {
+	if s.top > 0 {
+		s.top -= 1
+		return s.data[s.top], true
+	} else {
+		return nil, false
+	}
+}
+
+func (s *itemStack) push() bool {
+	if s.top < len(s.data) {
+		s.data[s.top] = item
+		s.top += 1
+		return true
+	} else {
+		return false
+	}
 }
 
 type Cache struct {
@@ -23,11 +52,11 @@ type Cache struct {
 	// a (unsafe?) pointer in the arrays of strings and structures.
 	// I keep an address of the "item" allocated from a pool
 	data  map[string]int64
-	queue list.List
+	queue cyclicBufferItems
 	mutex sync.RWMutex
 	ttl   int64
 	// pool of preallocted items
-	pool itemStack
+	pool *itemStack
 }
 
 func New(size int64, ttl int64) *Cache {
@@ -35,6 +64,7 @@ func New(size int64, ttl int64) *Cache {
 	c.queue.Init()
 	c.data = make(map[string]*PolicyCacheEntry)
 	c.ttl = ttl
+	c.pool = newStack(size)
 	return c
 }
 
