@@ -34,7 +34,7 @@ func TestRemove(t *testing.T) {
 	}
 }
 
-var cache = New(10*1000*1000, int64(TTL))
+var cache = New(100*1000*1000, int64(TTL))
 
 func BenchmarkStore(b *testing.B) {
 	now := nanotime()
