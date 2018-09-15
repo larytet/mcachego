@@ -113,15 +113,15 @@ func (c *Cache) Len() int {
 	return len(c.data)
 }
 
-func (c *Cache) Store(key Key, o Object) {
-	i := item{o: o, expiration: nanotime() + c.ttl}
+func (c *Cache) Store(key Key, o Object, now int64) {
+	i := item{o: o, expiration: now + c.ttl}
 	c.data[key] = i
 	c.fifo.add(key)
 }
 
 func (c *Cache) StoreSync(key Key, o Object) {
 	c.mutex.Lock()
-	c.Store(key, o)
+	c.Store(key, o, nanotime())
 	c.mutex.Unlock()
 }
 

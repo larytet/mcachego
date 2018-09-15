@@ -9,7 +9,7 @@ var TTL = 1 * 1000
 var cache = New(100*1000*1000, 1*1000)
 
 func TestAdd(t *testing.T) {
-	cache.Store(0, 0)
+	cache.Store(0, 0, nanotime())
 	v, ok := cache.Load(0)
 	if !ok {
 		t.Fatalf("Failed to load value from the cache")
@@ -35,8 +35,9 @@ func TestRemove(t *testing.T) {
 }
 
 func BenchmarkStore(b *testing.B) {
+	now := nanotime()
 	for i := 0; i < b.N; i++ {
-		cache.Store(Key(i), Object(i))
+		cache.Store(Key(i), Object(i), now)
 	}
 }
 
