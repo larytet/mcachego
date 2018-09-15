@@ -1,6 +1,7 @@
 package mcache
 
 import (
+	_ "fmt"
 	"sync"
 	_ "time"
 	_ "unsafe"
@@ -24,12 +25,12 @@ type item struct {
 type itemFifo struct {
 	head int
 	tail int
-	data []item
+	data []Key
 }
 
 func newFifo(size int64) *itemFifo {
 	s := new(itemFifo)
-	s.data = make([]item, size, size)
+	s.data = make([]Key, size, size)
 	s.head = 0
 	s.tail = 0
 	return s
@@ -43,10 +44,10 @@ func (s *itemFifo) inc(v int) int {
 	return v
 }
 
-func (s *itemFifo) add(i item) (ok bool) {
+func (s *itemFifo) add(key Key) (ok bool) {
 	newTail := s.inc(s.tail)
 	if s.head != newTail {
-		s.data[s.tail] = i
+		s.data[s.tail] = key
 		s.tail = newTail
 		return true
 	} else {
@@ -54,23 +55,23 @@ func (s *itemFifo) add(i item) (ok bool) {
 	}
 }
 
-func (s *itemFifo) remove() (i item, ok bool) {
+func (s *itemFifo) remove() (key Key, ok bool) {
 	newHead := s.inc(s.head)
-	if newHead != s.tail {
-		i = s.data[s.head]
+	if s.head != s.tail {
+		key = s.data[s.head]
 		s.head = newHead
-		return i, true
+		return key, true
 	} else {
-		return i, false
+		return key, false
 	}
 }
 
-func (s *itemFifo) peek() (i item, ok bool) {
+func (s *itemFifo) peek() (key Key, ok bool) {
 	if s.head != s.tail {
-		i = s.data[s.head]
-		return i, true
+		key = s.data[s.head]
+		return key, true
 	} else {
-		return i, false
+		return key, false
 	}
 }
 
@@ -115,7 +116,7 @@ func (c *Cache) Len() int {
 func (c *Cache) Store(key Key, o Object) {
 	i := item{o: o, expiration: nanotime() + c.ttl}
 	c.data[key] = i
-	c.fifo.add(i)
+	c.fifo.add(key)
 }
 
 func (c *Cache) StoreSync(key Key, o Object) {
@@ -137,10 +138,12 @@ func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
 }
 
 func (c *Cache) evict(now int64) (expired bool) {
-	i, ok := c.fifo.peek()
+	key, ok := c.fifo.peek()
 	if ok {
+		i := c.data[key]
 		if (i.expiration - now) < 0 {
 			c.fifo.remove()
+			delete(c.data, key)
 			return true
 		} else {
 			return false
@@ -151,10 +154,12 @@ func (c *Cache) evict(now int64) (expired bool) {
 }
 
 func (c *Cache) Evict(now int64) (nextExpiration int64, expired bool) {
+	nextExpiration = 0
 	c.mutex.Lock()
 	expired = c.evict(now)
-	i, ok := c.fifo.peek()
+	key, ok := c.fifo.peek()
 	if ok {
+		i := c.data[key]
 		nextExpiration = i.expiration - now
 	}
 	c.mutex.Unlock()
