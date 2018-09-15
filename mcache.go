@@ -102,6 +102,7 @@ func (c *Cache) Len() int {
 }
 
 func (c *Cache) Store(key Key, o Object) {
+	c.data[key] = o
 }
 
 func (c *Cache) StoreSync(key Key, o Object) {
@@ -111,7 +112,8 @@ func (c *Cache) StoreSync(key Key, o Object) {
 }
 
 func (c *Cache) Load(key Key) (o Object, ok bool) {
-	return 0, false
+	o, ok = c.data[key]
+	return o, ok
 }
 
 func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
@@ -122,8 +124,8 @@ func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
 }
 
 func (c *Cache) Remove(key Key) (ok bool) {
-	ok = true
-	return ok
+	delete(c.data, key)
+	return true
 }
 
 func (c *Cache) RemoveSync(key Key) (ok bool) {
