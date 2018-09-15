@@ -180,3 +180,37 @@ func (c *Cache) EvictSync(now int64) (nextExpiration int64, expired bool) {
 // an API for the application which demos a HowTo
 // Application needs a pool to allocate users objects from
 // and keep them in cache
+// This is a lock free memory pool of objects of the same size
+
+type ObjectData []byte
+
+type Pool struct {
+	top         int
+	data        []ObjectData
+	objectSize  int
+	objectCount int
+}
+
+func NewPool(objectSize, objectCount int) (p *Pool) {
+	p.objectSize, p.objectCount = objectSize, objectCount
+	p = new(Pool)
+	p.data = make([]ObjectData, objectCount, objectCount)
+	for i := 0; i < objectCount; i += 1 {
+		p.data[i] = make([]byte, objectSize, objectSize)
+	}
+	p.top = objectCount
+	return p
+}
+
+func (p *Pool) Alloc() (o ObjectData, ok bool) {
+	if p.top > 0 {
+		p.top -= 1
+		return p.data[p.top], true
+	}
+	return nil, false
+}
+
+func (p *Pool) Free(o ObjectData) {
+	p.data[p.top] = o
+	p.top += 1
+}

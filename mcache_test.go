@@ -6,7 +6,7 @@ import (
 )
 
 var TTL = 100
-var benchmarksSize = 50 * 1000 * 1000
+var benchmarksSize = 5 * 1000 * 1000
 var cache = New(int64(benchmarksSize), int64(TTL))
 
 func TestAdd(t *testing.T) {
