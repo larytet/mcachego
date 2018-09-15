@@ -1,5 +1,4 @@
-Yet another Go cache 
-I need the fastest possible implementation with optional synchronising
+Yet another Go cache. I need the fastest possible implementation with optional synchronizaton
 
 * Carefully avoid allocations from the heap in the Store()/Laod() API
 * Use runtime.nanotime()
