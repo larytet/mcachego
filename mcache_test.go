@@ -85,14 +85,15 @@ type MyData struct {
 }
 
 func TestAddCustomType(t *testing.T) {
-	myData := new(MyData)
-	pool := NewPool(reflect.TypeOf(myData), 1)
+	pool := NewPool(reflect.TypeOf(new(MyData)), 1)
 	ptr, ok := pool.Alloc()
 	if !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
 	}
-	myData = (*MyData)(ptr)
+
+	myData := (*MyData)(ptr)
 	myData.key = 1
+
 	smallCache.Store(Key(myData.key), Object(uintptr(unsafe.Pointer(myData))), Nanotime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
 	o, evicted, nextExpiration := smallCache.Evict(Nanotime())
