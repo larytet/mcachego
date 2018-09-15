@@ -1,10 +1,13 @@
-package mache
+package mcache
 
 import (
 	"sync"
 	_ "time"
-	"unsafe"
+	_ "unsafe"
 )
+
+type Key int64
+type Object int64
 
 // Straight from https://github.com/patrickmn/go-cache
 // Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
@@ -14,8 +17,8 @@ type item struct {
 	// https://stackoverflow.com/questions/28024884/does-a-type-assertion-type-switch-have-bad-performance-is-slow-in-go
 	// Can I use unsafe pointers here?
 	// Object     interface{}
-	o          unsafe.Pointer
-	Expiration int64
+	o          Object
+	expiration int64
 }
 
 type itemFifo struct {
@@ -75,14 +78,11 @@ func Nanotime() int64 {
 	return nanotime()
 }
 
-type Key int64
-type Object int64
-
 type Cache struct {
 	// GC is going to poll the cache entries. I can try map[init]int and cast int to
 	// a (unsafe?) pointer in the arrays of strings and structures.
 	// I keep an address of the "item" allocated from a pool
-	data  map[Key]Object
+	data  map[Key]item
 	mutex sync.RWMutex
 	ttl   int64
 	// pool of preallocted items
@@ -91,7 +91,7 @@ type Cache struct {
 
 func New(size int64, ttl int64) *Cache {
 	c := new(Cache)
-	c.data = make(map[Key]Object)
+	c.data = make(map[Key]item)
 	c.ttl = ttl
 	c.fifo = newFifo(size)
 	return c
@@ -102,7 +102,8 @@ func (c *Cache) Len() int {
 }
 
 func (c *Cache) Store(key Key, o Object) {
-	c.data[key] = o
+	i := item{o: o, expiration: nanotime() + c.ttl}
+	c.data[key] = i
 }
 
 func (c *Cache) StoreSync(key Key, o Object) {
@@ -112,8 +113,8 @@ func (c *Cache) StoreSync(key Key, o Object) {
 }
 
 func (c *Cache) Load(key Key) (o Object, ok bool) {
-	o, ok = c.data[key]
-	return o, ok
+	i, ok := c.data[key]
+	return i.o, ok
 }
 
 func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
