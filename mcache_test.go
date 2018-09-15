@@ -11,6 +11,9 @@ var TTL int64 = 10
 var smallCache = New(1, int64(TTL))
 
 func TestAdd(t *testing.T) {
+	if smallCache.Len() != 0 {
+		t.Fatalf("Cache is not empty %d", smallCache.Len())
+	}
 	smallCache.Store(0, 0, nanotime())
 	v, ok := smallCache.Load(0)
 	if !ok {
@@ -18,6 +21,9 @@ func TestAdd(t *testing.T) {
 	}
 	if v != 0 {
 		t.Fatalf("Wrong value %v instead of %v", v, 0)
+	}
+	if smallCache.Len() != 1 {
+		t.Fatalf("Got %d, expected 1", smallCache.Len())
 	}
 }
 
