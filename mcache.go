@@ -194,7 +194,6 @@ func (c *Cache) EvictSync(now int64) (o Object, expired bool, nextExpiration int
 // Application needs a pool to allocate users objects from
 // and keep them in cache
 // This is a lock free memory pool of objects of the same size
-
 type Pool struct {
 	top         int64
 	stack       []unsafe.Pointer
