@@ -45,3 +45,14 @@ func BenchmarkLoad(b *testing.B) {
 		cache.Load(Key(i))
 	}
 }
+
+func BenchmarkEvictSetup(b *testing.B) {
+	time.Sleep(time.Second)
+}
+
+func BenchmarkEvict(b *testing.B) {
+	now := nanotime()
+	for i := 0; i < b.N; i++ {
+		cache.Evict(now)
+	}
+}
