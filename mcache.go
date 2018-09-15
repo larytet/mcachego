@@ -1,6 +1,7 @@
 package mcache
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -195,11 +196,10 @@ func (c *Cache) EvictSync(now int64) (nextExpiration int64, expired bool) {
 // and keep them in cache
 // This is a lock free memory pool of objects of the same size
 
-type ObjectData []byte
-
 type Pool struct {
 	top         int64
-	data        []ObjectData
+	stack       []unsafe.Pointer
+	data        []byte
 	objectSize  int
 	objectCount int
 }
@@ -208,9 +208,10 @@ func NewPool(t reflect.Type, objectCount int) (p *Pool) {
 	objectSize := int(unsafe.Sizeof(t))
 	p = new(Pool)
 	p.objectSize, p.objectCount = objectSize, objectCount
-	p.data = make([]ObjectData, objectCount, objectCount)
+	p.data = make([]byte, objectSize*objectCount, objectSize*objectCount)
+	p.stack = make([]unsafe.Pointer, objectCount, objectCount)
 	for i := 0; i < objectCount; i += 1 {
-		p.data[i] = make([]byte, objectSize, objectSize)
+		p.stack[i] = unsafe.Pointer(&p.data[i*objectSize])
 	}
 	p.top = int64(objectCount)
 	return p
@@ -221,19 +222,20 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 		top := p.top
 		if atomic.CompareAndSwapInt64(&p.top, top, top-1) {
 			// success, I decremented p.top
-			return unsafe.Pointer(&p.data[top-1]), true
+			fmt.Printf("Alloc %p\n", p.data[top-1])
+			return p.stack[top-1], true
 		}
 	}
 	return nil, false
 }
 
 func (p *Pool) Free(ptr unsafe.Pointer) {
-	o := *(*ObjectData)(ptr)
 	for {
 		top := p.top
 		if atomic.CompareAndSwapInt64(&p.top, top, top+1) {
 			// success, I incremented p.top
-			p.data[top] = o
+			fmt.Printf("Free %p\n", ptr)
+			p.stack[top] = ptr
 			return
 		}
 	}
