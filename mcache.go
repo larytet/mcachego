@@ -1,7 +1,6 @@
 package mcache
 
 import (
-	_ "fmt" // I want to debug from time to time
 	"sync"
 	_ "unsafe" // I need this for runtime.nanotime()
 )
@@ -32,19 +31,22 @@ type itemFifo struct {
 	head int
 	tail int
 	data []Key
+	size int
 }
 
-func newFifo(size int64) *itemFifo {
+func newFifo(size int) *itemFifo {
 	s := new(itemFifo)
 	s.data = make([]Key, size+1, size+1)
+	s.size = size
 	s.head = 0
 	s.tail = 0
 	return s
 }
 
 func (s *itemFifo) inc(v int) int {
-	v += 1
-	if v >= len(s.data) {
+	if v < s.size {
+		v += 1
+	} else {
 		v = 0
 	}
 	return v
@@ -103,13 +105,15 @@ type Cache struct {
 	ttl   int64
 	// FIFO of the items to support eviction of the expired entries
 	fifo *itemFifo
+	size int
 }
 
 var ns = int64(1000 * 1000)
 
-func New(size int64, ttl int64) *Cache {
+func New(size int, ttl int64) *Cache {
 	c := new(Cache)
-	c.data = make(map[Key]item)
+	c.size = size
+	c.data = make(map[Key]item, size)
 	c.ttl = ns * ttl
 	c.fifo = newFifo(size)
 	return c
@@ -117,6 +121,11 @@ func New(size int64, ttl int64) *Cache {
 
 func (c *Cache) Len() int {
 	return len(c.data)
+}
+
+func (c *Cache) Reset() {
+	c.fifo = newFifo(c.size)
+	c.data = make(map[Key]item, c.size)
 }
 
 func (c *Cache) Store(key Key, o Object, now int64) {
