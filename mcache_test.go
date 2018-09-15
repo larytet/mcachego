@@ -6,7 +6,7 @@ import (
 )
 
 var TTL = 1 * 1000
-var cache = New(10*1000*1000, 1*1000)
+var cache = New(100*1000*1000, 1*1000)
 
 func TestAdd(t *testing.T) {
 	cache.Store(0, 0)
