@@ -201,6 +201,8 @@ type Pool struct {
 	data        []byte
 	objectSize  int
 	objectCount int
+	maxAddr     uintptr
+	minAddr     uintptr
 }
 
 func NewPool(t reflect.Type, objectCount int) (p *Pool) {
@@ -209,6 +211,8 @@ func NewPool(t reflect.Type, objectCount int) (p *Pool) {
 	p.objectSize, p.objectCount = objectSize, objectCount
 	p.data = make([]byte, objectSize*objectCount, objectSize*objectCount)
 	p.stack = make([]unsafe.Pointer, objectCount, objectCount)
+	p.maxAddr = uintptr(unsafe.Pointer(&p.data[objectSize*(objectCount-1)]))
+	p.minAddr = uintptr(unsafe.Pointer(&p.data[0]))
 	p.Reset()
 	return p
 }
@@ -231,13 +235,16 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	return nil, false
 }
 
-func (p *Pool) Free(ptr unsafe.Pointer) {
+func (p *Pool) Free(ptr unsafe.Pointer) bool {
+	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
+		return false
+	}
 	for {
 		top := p.top
 		if atomic.CompareAndSwapInt64(&p.top, top, top+1) {
 			// success, I incremented p.top
 			p.stack[top] = ptr
-			return
+			return true
 		}
 	}
 }

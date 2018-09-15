@@ -46,6 +46,7 @@ func TestAddCustomType(t *testing.T) {
 	if !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
 	}
+	t.Logf("Allocated %p", ptr)
 
 	myData := (*MyData)(ptr)
 	myData.key = 1
@@ -59,7 +60,15 @@ func TestAddCustomType(t *testing.T) {
 	if nextExpiration != 0 {
 		t.Fatalf("bad next expiration %v", nextExpiration)
 	}
-	pool.Free(unsafe.Pointer(o))
+	if ok = pool.Free(unsafe.Pointer(o)); !ok {
+		t.Fatalf("Failed to free ptr %v", o)
+	}
+	if ok = pool.Free(unsafe.Pointer(pool)); ok {
+		t.Fatalf("Succeeded to add illegal pointer %p", pool)
+	}
+	if ok = pool.Free(unsafe.Pointer(uintptr(0))); ok {
+		t.Fatalf("Succeeded to add illegal pointer 0")
+	}
 }
 
 func BenchmarkPoolAlloc(b *testing.B) {
