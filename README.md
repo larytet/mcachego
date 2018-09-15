@@ -10,6 +10,7 @@ Yet another Go cache. I need the fastest possible implementation with optional s
 
 Benchmarks:
 
+	BenchmarkPoolAlloc-4   	10000000	         9.68 ns/op
 	BenchmarkStore-4   	50000000	       292 ns/op
 	BenchmarkLoad-4    	50000000	       129 ns/op
 	BenchmarkEvict-4   	50000000	       222 ns/op
