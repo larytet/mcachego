@@ -56,3 +56,9 @@ func BenchmarkEvict(b *testing.B) {
 		cache.Evict(now)
 	}
 }
+
+func TestRemove1(t *testing.T) {
+	if len(cache.data) > 0 {
+		t.Fatalf("Failed to remove all values from the cache, remains %d", len(cache.data))
+	}
+}

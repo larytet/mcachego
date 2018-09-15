@@ -155,13 +155,18 @@ func (c *Cache) evict(now int64) (expired bool) {
 
 func (c *Cache) Evict(now int64) (nextExpiration int64, expired bool) {
 	nextExpiration = 0
-	c.mutex.Lock()
 	expired = c.evict(now)
 	key, ok := c.fifo.peek()
 	if ok {
 		i := c.data[key]
 		nextExpiration = i.expiration - now
 	}
+	return nextExpiration, expired
+}
+
+func (c *Cache) EvictSync(now int64) (nextExpiration int64, expired bool) {
+	c.mutex.Lock()
+	nextExpiration, expired = c.Evict(now)
 	c.mutex.Unlock()
 	return nextExpiration, expired
 }
