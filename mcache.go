@@ -93,7 +93,7 @@ func New(size int64, ttl int64) *Cache {
 	c := new(Cache)
 	c.data = make(map[Key]Object)
 	c.ttl = ttl
-	c.pool = newStack(size)
+	c.fifo = newFifo(size)
 	return c
 }
 
