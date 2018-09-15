@@ -1,2 +1,2 @@
-go test   -cpuprofile profile.out -bench=.
+go test -cover  -cpuprofile profile.out -bench=.
 
