@@ -177,6 +177,6 @@ func (c *Cache) EvictSync(now int64) (nextExpiration int64, expired bool) {
 }
 
 // I am replacing the whole Go  memory managemnt, It is safer to provide
-// an APIfor the application
+// an API for the application which demos a HowTo
 // Application needs a pool to allocate users objects from
 // and keep them in cache
