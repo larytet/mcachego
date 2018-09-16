@@ -1,6 +1,7 @@
 package mcache
 
 import (
+	"hash/fnv"
 	"reflect"
 	"testing"
 	"time"
@@ -122,6 +123,20 @@ func TestAddCustomType(t *testing.T) {
 	}
 }
 
+var fnvSum uint32
+
+// 40ns per hash
+func BenchmarkHashFnv(b *testing.B) {
+	s := "google.com."
+	h := fnv.New32a()
+	for i := 0; i < b.N; i++ {
+		h.Reset()
+		h.Write([]byte(s))
+		fnvSum = h.Sum32()
+	}
+}
+
+// 10ns/allocation
 func BenchmarkPoolAlloc(b *testing.B) {
 	poolSize := 10 * 1000 * 1000
 	pool := NewPool(reflect.TypeOf(new(MyData)), poolSize)
@@ -139,6 +154,7 @@ func BenchmarkPoolAlloc(b *testing.B) {
 var cacheSize = 10 * 1000 * 1000
 var cache = New(cacheSize, int64(TTL))
 
+// 150ns cache.Store()
 func BenchmarkStore(b *testing.B) {
 	now := nanotime()
 	cache.Reset()
@@ -150,12 +166,14 @@ func BenchmarkStore(b *testing.B) {
 	}
 }
 
+// 120ns cache.Load()
 func BenchmarkLoad(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		cache.Load(Key(i))
 	}
 }
 
+// 180ns cache.Evict()
 func BenchmarkEvict(b *testing.B) {
 	cache.Reset()
 	now := nanotime()
