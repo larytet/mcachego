@@ -18,7 +18,7 @@ type Key int64
 // Can I use unsafe pointers to the users objects and cast to int64?
 // See also insane runtime.noescape() discussion
 //  in https://segment.com/blog/allocation-efficiency-in-high-performance-go-services/
-// The user is expected to allocate the pointers from a pool like UnsafePool
+// The user is expected to allocate pointers from a pool like UnsafePool
 type Object uintptr
 
 // Straight from https://github.com/patrickmn/go-cache
