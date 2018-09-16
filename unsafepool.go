@@ -34,6 +34,19 @@ func NewUnsafePool(t reflect.Type, objectCount int) (p *UnsafePool) {
 	return p
 }
 
+func (p *UnsafePool) Size() int {
+	return p.objectCount
+}
+
+func (p *UnsafePool) SizeBytes() int {
+	var up unsafe.Pointer
+	return len(p.data) + int(unsafe.Sizeof(up))*len(p.stack)
+}
+
+func (p *UnsafePool) Count() int {
+	return int(p.top)
+}
+
 func (p *UnsafePool) Reset() {
 	for i := 0; i < p.objectCount; i += 1 {
 		p.stack[i] = unsafe.Pointer(&p.data[i*p.objectSize])
