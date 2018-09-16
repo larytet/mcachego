@@ -3,7 +3,7 @@ This is yet another Go cache. I need the fastest possible implementation with op
 * Carefully avoid allocations from the heap in the Store()/Load() API
 * Use runtime.nanotime()
 * Synchronisation is optional
-* Eviction of expired entries is up to the application
+* All items have the same expiration period
 * Minimalistic API
 * Eviction only via expiration
 * "Unsafe" memory pool 
