@@ -7,7 +7,12 @@ import (
 )
 
 type Statistics struct {
-	MaxOccupancy uint64
+	Alloc              uint64
+	AllocLockCongested uint64
+	Free               uint64
+	FreeBadAddress     uint64
+	FreeLockCongested  uint64
+	MinAvailability    uint64
 }
 
 // In the cache API I am replacing the whole Go  memory managemnt,
@@ -61,20 +66,22 @@ func (p *Pool) Reset() {
 	}
 	p.top = int32(p.objectCount)
 	p.statistics = new(Statistics)
+	p.statistics.MinAvailability = uint64(p.objectCount)
 }
 
 // Allocate a block from the pool
 func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
+	p.statistics.Alloc += 1
 	for p.top > 0 {
 		top := p.top
 		if atomic.CompareAndSwapInt32(&p.top, top, top-1) {
 			// success, I decremented p.top
-			occupancy := uint64(int32(p.objectCount) - top)
-			if p.statistics.MaxOccupancy < occupancy {
-				p.statistics.MaxOccupancy = occupancy
+			if p.statistics.MinAvailability > uint64(top) {
+				p.statistics.MinAvailability = uint64(top)
 			}
 			return p.stack[top-1], true
 		}
+		p.statistics.AllocLockCongested += 1
 	}
 	return nil, false
 }
@@ -82,8 +89,10 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 // Return previously allocated block to the pool
 func (p *Pool) Free(ptr unsafe.Pointer) bool {
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
+		p.statistics.FreeBadAddress += 1
 		return false
 	}
+	p.statistics.Free += 1
 	for {
 		top := p.top
 		if atomic.CompareAndSwapInt32(&p.top, top, top+1) {
@@ -91,6 +100,7 @@ func (p *Pool) Free(ptr unsafe.Pointer) bool {
 			p.stack[top] = ptr
 			return true
 		}
+		p.statistics.FreeLockCongested += 1
 	}
 }
 
