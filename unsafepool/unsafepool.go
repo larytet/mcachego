@@ -81,6 +81,7 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 			}
 			return p.stack[top-1], true
 		}
+		// a rare event
 		p.statistics.AllocLockCongested += 1
 	}
 	return nil, false
@@ -100,6 +101,7 @@ func (p *Pool) Free(ptr unsafe.Pointer) bool {
 			p.stack[top] = ptr
 			return true
 		}
+		// a rare event
 		p.statistics.FreeLockCongested += 1
 	}
 }
