@@ -42,8 +42,13 @@ See TestAddCustomType() for usage.
 * https://github.com/patrickmn/go-cache
 * https://github.com/allegro/bigcache
 * https://github.com/coocood/freecache
-* https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
 * https://github.com/koding/cache
 * https://github.com/sch00lb0y/vegamcache
 * https://github.com/OneOfOne/cmap
 * https://github.com/golang/groupcache
+
+
+## Links
+
+* github.com/cespare/xxhash
+* https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
