@@ -60,7 +60,8 @@ func New(size int, maxCollisions int) (h *Hashtable) {
 	h = new(Hashtable)
 	h.size = size
 	h.maxCollisions = maxCollisions
-	count := size * (maxCollisions + 1)
+	// allow collision for the last entry in the table
+	count := size + maxCollisions
 	h.data = make([]item, count, count)
 	return h
 }

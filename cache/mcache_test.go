@@ -133,7 +133,7 @@ func TestAddCustomType(t *testing.T) {
 
 func TestHashtable(t *testing.T) {
 	size := 10
-	h := hashtable.New(size, 2)
+	h := hashtable.New(2*size, 2)
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
 		ok := h.Store(key, uintptr(i))
