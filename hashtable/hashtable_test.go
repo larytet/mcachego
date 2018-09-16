@@ -49,7 +49,7 @@ func TestHashtable(t *testing.T) {
 
 func BenchmarkHashtableStore(b *testing.B) {
 	b.ReportAllocs()
-	h := New(2*b.N, 128)
+	h := New(4*b.N, 32)
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
@@ -61,6 +61,7 @@ func BenchmarkHashtableStore(b *testing.B) {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
+	b.Logf("Store collisions %d from %d", h.statistics.StoreCollision, h.statistics.Store)
 }
 
 func BenchmarkHashtableLoad(b *testing.B) {
