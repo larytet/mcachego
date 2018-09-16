@@ -11,7 +11,7 @@ import (
 // an API for the application which demos a HowTo
 // Application needs a pool to allocate users objects
 // and keep the objects in the cache
-// This is a lock free memory pool of objects of the same size
+// This is a lock free memory pool of blocks of fixed size
 type UnsafePool struct {
 	top         int32
 	stack       []unsafe.Pointer
@@ -57,6 +57,7 @@ func (p *UnsafePool) Reset() {
 	p.top = int32(p.objectCount)
 }
 
+// Allocate a block from the pool
 func (p *UnsafePool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	for p.top > 0 {
 		top := p.top
@@ -68,6 +69,7 @@ func (p *UnsafePool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	return nil, false
 }
 
+// Return previously allocated block to the pool
 func (p *UnsafePool) Free(ptr unsafe.Pointer) bool {
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
 		return false
