@@ -133,6 +133,7 @@ func (c *Cache) Reset() {
 
 func (c *Cache) Store(key Key, o Object, now int64) bool {
 	// Create an entry on the stack, copy 128 bits
+	// Probably adds 2ns
 	// I can save an assignment here by using user prepared items
 	// The idea is to require using of the UnsafePool() and pad 64 bits
 	// expirationNs to the user structure

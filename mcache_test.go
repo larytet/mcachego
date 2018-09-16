@@ -156,6 +156,21 @@ func BenchmarkPoolAlloc(b *testing.B) {
 	}
 }
 
+func BenchmarkFifo(b *testing.B) {
+	fifoSize := 10 * 1000 * 1000
+	fifo := newFifo(fifoSize)
+	b.ReportAllocs()
+	b.N = fifoSize
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		ok := fifo.add(Key(i))
+		if !ok {
+			b.Fatalf("Failed to add an object to the FIFO %d", i)
+		}
+	}
+}
+
 func BenchmarkPoolAllocFree(b *testing.B) {
 	b.ReportAllocs()
 	poolSize := 10 * 1000 * 1000
