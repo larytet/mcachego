@@ -15,15 +15,17 @@ Benchmarks:
 	BenchmarkLoad-4    	50000000	       129 ns/op
 	BenchmarkEvict-4   	50000000	       222 ns/op
 
-It gives 5-10M cache operations/s on a single core. Round trip allocation from a pool-store in cache-evict from cache-free to the pool requires 360ns. 
-A single core system theoretical peak is ~3M events/s. With packet size 64 bytes this code can handle 100Mb/s line.
 
-In the pprof map API dominates the CPU consumption
+In the pprof the map API dominates the CPU consumption
 
       flat  flat%   sum%        cum   cum%
      9.03s 29.61% 29.61%      9.52s 31.21%  runtime.mapaccess1_fast64
      8.18s 26.82% 56.43%     13.20s 43.28%  runtime.mapassign_fast64
      5.52s 18.10% 74.52%      5.90s 19.34%  runtime.mapaccess2_fast64
+
+It gives 5-10M cache operations/s on a single core. Round trip allocation from a pool-store in cache-evict from cache-free to the pool requires 360ns. 
+A single core system theoretical peak is ~3M events/s. With packet size 64 bytes this code can handle 100Mb/s line.
+
 
 See TestAddCustomType() for usage.
 
