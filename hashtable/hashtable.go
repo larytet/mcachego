@@ -9,7 +9,7 @@ import (
 // An alternative for Go runtime implemenation of map[string]uintptr
 // Requires to specify maximum number of hash collisions at the initialization time
 // Insert can fail if there are too many collisions
-// The goal is 3x improvement and true O(1) performance
+// The goal is 3x improvement and true O(1) performance (what about cache miss?)
 // See also:
 // * https://medium.com/@ConnorPeet/go-maps-are-not-o-1-91c1e61110bf
 // * https://github.com/larytet/emcpp/blob/master/src/HashTable.h
@@ -102,7 +102,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	index := int(hash % uint64(h.size))
 	collisions := 0
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
-		// likely a cache miss here
+		// most expensive line in the code - likely a cache miss here
 		it := &h.data[index]
 		// The next line - first fetch - consumes lot of CPU cycles. Why?
 		if !it.inUse {
