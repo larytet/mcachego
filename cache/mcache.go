@@ -164,7 +164,7 @@ func (c *Cache) Store(key Key, o Object, now int64) bool {
 	// expirationNs to the user structure
 	// This is very C/C++ style
 
-	// A temporary variable helps to profile
+	// A temporary variable helps to profile the code
 	i := item{o: o, expirationNs: now + c.ttl}
 
 	// 85% of the CPU cycles are spent here. Go lang map is rather slow
@@ -217,6 +217,10 @@ func (c *Cache) evict(now int64) (o Object, expired bool) {
 		c.statistics.EvictPeekFailed += 1
 	}
 	return 0, false
+}
+
+func (c *Cache) GetStatistics() Statistics {
+	return *c.statistics
 }
 
 func (c *Cache) Evict(now int64) (o Object, expired bool, nextExpirationNs int64) {

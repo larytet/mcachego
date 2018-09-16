@@ -6,6 +6,10 @@ import (
 	"unsafe"
 )
 
+type Statistics struct {
+	MaxOccupancy uint64
+}
+
 // In the cache API I am replacing the whole Go  memory managemnt,
 // It is safer (no pun) to provide
 // an API for the application which demos a HowTo
@@ -20,6 +24,7 @@ type Pool struct {
 	objectCount int
 	maxAddr     uintptr
 	minAddr     uintptr
+	statistics  *Statistics
 }
 
 func New(t reflect.Type, objectCount int) (p *Pool) {
@@ -55,6 +60,7 @@ func (p *Pool) Reset() {
 		p.stack[i] = unsafe.Pointer(&p.data[i*p.objectSize])
 	}
 	p.top = int32(p.objectCount)
+	p.statistics = new(Statistics)
 }
 
 // Allocate a block from the pool
@@ -63,6 +69,10 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 		top := p.top
 		if atomic.CompareAndSwapInt32(&p.top, top, top-1) {
 			// success, I decremented p.top
+			occupancy := uint64(int32(p.objectCount) - top)
+			if p.statistics.MaxOccupancy < occupancy {
+				p.statistics.MaxOccupancy = occupancy
+			}
 			return p.stack[top-1], true
 		}
 	}
@@ -82,4 +92,8 @@ func (p *Pool) Free(ptr unsafe.Pointer) bool {
 			return true
 		}
 	}
+}
+
+func (p *Pool) GetStatistics() Statistics {
+	return *p.statistics
 }
