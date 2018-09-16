@@ -47,7 +47,7 @@ func TestHashtable(t *testing.T) {
 	}
 }
 
-func BenchmarkStore(b *testing.B) {
+func BenchmarkHashtableStore(b *testing.B) {
 	b.ReportAllocs()
 	h := New(2*b.N, 128)
 	keys := make([]string, b.N, b.N)
@@ -61,6 +61,22 @@ func BenchmarkStore(b *testing.B) {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
+}
+
+func BenchmarkHashtableLoad(b *testing.B) {
+	b.ReportAllocs()
+	h := New(2*b.N, 128)
+	keys := make([]string, b.N, b.N)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("%d", b.N-i)
+	}
+	for i := 0; i < b.N; i++ {
+		key := keys[i]
+		if ok := h.Store(key, uintptr(i)); !ok {
+			b.Fatalf("Failed to add item %d, %v", i, key)
+		}
+	}
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := keys[i]
 		v, ok := h.Load(key)
