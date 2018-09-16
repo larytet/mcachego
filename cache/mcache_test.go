@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/cespare/xxhash"
 	"hash/fnv"
+	"mcachego/hashtable"
 	"mcachego/unsafepool"
 	"reflect"
 	"sync/atomic"
@@ -127,6 +128,21 @@ func TestAddCustomType(t *testing.T) {
 	}
 	if ok = pool.Free(unsafe.Pointer(uintptr(0))); ok {
 		t.Fatalf("Succeeded to add illegal pointer 0")
+	}
+}
+
+func TestHashtable(t *testing.T) {
+	h := hashtable.New(3, 2)
+	ok := h.Store("0", 0)
+	if !ok {
+		t.Fatalf("Failed to store value in the hashtable")
+	}
+	v, ok := h.Load("0")
+	if !ok {
+		t.Fatalf("Failed to find value in the hashtable")
+	}
+	if v != 0 {
+		t.Fatalf("Got %v instead of '0' from the hashtable", v)
 	}
 }
 
