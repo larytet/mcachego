@@ -1,3 +1,5 @@
+## Introduction
+
 This is yet another Go cache. I need the fastest possible implementation with optional synchronizaton.
 
 * Carefully avoid allocations from the heap in the Store()/Load() API
@@ -8,8 +10,7 @@ This is yet another Go cache. I need the fastest possible implementation with op
 * Eviction only via expiration
 * "Unsafe" memory pool 
 
-
-Benchmarks:
+## Benchmarks
 
 	BenchmarkPoolAlloc-4   	10000000	         9.68 ns/op
 	BenchmarkStore-4   	50000000	       292 ns/op
@@ -29,5 +30,8 @@ It gives 5-10M cache operations/s on a single core. Round trip allocation from a
 A single core system theoretical peak is ~3M events/s. With packet size 64 bytes this code is expected to handle 100Mb/s line.
 
 
-See TestAddCustomType() for usage.
+## Usage
 
+The Cache API is a thin wrapper around Go map[int32]int32 and an expiration queue. 
+
+See TestAddCustomType() for usage.
