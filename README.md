@@ -52,3 +52,5 @@ See TestAddCustomType() for usage.
 
 * github.com/cespare/xxhash
 * https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
+* https://dave.cheney.net/2018/05/29/how-the-go-runtime-implements-maps-efficiently-without-generics
+* 
