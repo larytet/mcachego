@@ -34,16 +34,19 @@ func NewUnsafePool(t reflect.Type, objectCount int) (p *UnsafePool) {
 	return p
 }
 
+// Maximum number of objects in the pool
 func (p *UnsafePool) Size() int {
 	return p.objectCount
 }
 
+// Occupied memory
 func (p *UnsafePool) SizeBytes() int {
 	var up unsafe.Pointer
 	return len(p.data) + int(unsafe.Sizeof(up))*len(p.stack)
 }
 
-func (p *UnsafePool) Count() int {
+// Number of objects available for allocation
+func (p *UnsafePool) Availability() int {
 	return int(p.top)
 }
 
