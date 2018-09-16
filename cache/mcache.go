@@ -154,6 +154,7 @@ func (c *Cache) Reset() {
 
 // Add an object to the cache
 // This is the single most expensive function in the code - 160ns/op
+// For highly congested systems most choose sharding. Should I?
 func (c *Cache) Store(key Key, o Object, now int64) bool {
 	// Create an entry on the stack, copy 128 bits
 	// These two lines of code add 20% overhead
@@ -169,7 +170,8 @@ func (c *Cache) Store(key Key, o Object, now int64) bool {
 
 	// 85% of the CPU cycles are spent here. Go lang map is rather slow
 	// Trivial map[int32]int32 requires 90ns to add an entry
-	// Where the rest (80ns) comes from?
+	// What about a custom implementation of map? Can I do better than
+	// 120ns (400 CPU cycles)?
 	c.data[key] = i
 	ok := c.fifo.add(key)
 	count := uint64(len(c.data))
