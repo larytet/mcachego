@@ -154,7 +154,6 @@ func (c *Cache) Reset() {
 
 // Add an object to the cache
 // This is the single most expensive function in the code - 160ns/op
-// For highly congested systems most choose sharding. Should I?
 func (c *Cache) Store(key Key, o Object, now int64) bool {
 	// Create an entry on the stack, copy 128 bits
 	// These two lines of code add 20% overhead
@@ -181,6 +180,7 @@ func (c *Cache) Store(key Key, o Object, now int64) bool {
 	return ok
 }
 
+// For highly congested systems most choose sharding. Should I?
 func (c *Cache) StoreSync(key Key, o Object) bool {
 	c.mutex.Lock()
 	ok := c.Store(key, o, nanotime())

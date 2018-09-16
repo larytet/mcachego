@@ -2,6 +2,7 @@ package mcache
 
 import (
 	"fmt"
+	"github.com/cespare/xxhash"
 	"hash/fnv"
 	"mcachego/unsafepool"
 	"reflect"
@@ -365,6 +366,14 @@ func BenchmarkLocalCounter(b *testing.B) {
 	var localCounter int32
 	for i := 0; i < b.N; i++ {
 		localCounter += 1
+	}
+}
+
+// 8ns/sum
+// O(len(string)) ?
+func BenchmarkXxhashSum64String(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		xxhash.Sum64String("google.go.")
 	}
 }
 
