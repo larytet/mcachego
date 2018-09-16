@@ -163,6 +163,32 @@ func BenchmarkAtomicCompareAndSwap(b *testing.B) {
 	}
 }
 
+func BenchmarkTimeNowUnixNano(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		time.Now().UnixNano()
+	}
+}
+
+func BenchmarkEmpty(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+	}
+}
+
+var globalCounter int32
+
+func BenchmarkGlobalCounter(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		globalCounter += 1
+	}
+}
+
+func BenchmarkLocalCounter(b *testing.B) {
+	var localCounter int32
+	for i := 0; i < b.N; i++ {
+		localCounter += 1
+	}
+}
+
 var cacheSize = 10 * 1000 * 1000
 var cache = New(cacheSize, int64(TTL))
 
