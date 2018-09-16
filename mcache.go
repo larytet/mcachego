@@ -104,6 +104,7 @@ type Cache struct {
 	// a (unsafe?) pointer in the arrays of strings and structures.
 	// Inside of the "item" I keep an address of the "item" allocated from a pool
 	// Insertion into the map[int]int is 20% faster than map[int]item :100ns vs 120ns
+	// The fastest in the benchmarks is map[string]uintptr
 	data  map[Key]item
 	mutex sync.RWMutex
 	ttl   int64

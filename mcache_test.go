@@ -1,6 +1,7 @@
 package mcache
 
 import (
+	"fmt"
 	"hash/fnv"
 	"reflect"
 	"sync/atomic"
@@ -165,8 +166,8 @@ func BenchmarkStackAllocationMap(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		i := item{o: Object(i), expirationNs: now + TTL}
-		m[uintptr(i.o)] = uintptr(i.o)
+		it := item{o: Object(i), expirationNs: now + TTL}
+		m[uintptr(it.o)] = uintptr(it.o)
 	}
 }
 
@@ -215,8 +216,7 @@ func BenchmarkMapInt32Store(b *testing.B) {
 }
 
 func BenchmarkMapInt32Delete(b *testing.B) {
-	mapSize := 1 * 1000 * 1000
-	b.N = mapSize
+	mapSize := b.N
 	m := make(map[int32]int32, mapSize)
 	for i := 0; i < b.N; i++ {
 		m[int32(i)] = int32(i)
@@ -228,8 +228,7 @@ func BenchmarkMapInt32Delete(b *testing.B) {
 }
 
 func BenchmarkMapInt32Lookup(b *testing.B) {
-	mapSize := 1 * 1000 * 1000
-	b.N = mapSize
+	mapSize := b.N
 	m := make(map[int32]int32, mapSize)
 	for i := 0; i < b.N; i++ {
 		m[int32(i)] = int32(i)
@@ -243,6 +242,46 @@ func BenchmarkMapInt32Lookup(b *testing.B) {
 		if v != int32(i) {
 			b.Fatalf("Bad entry in the map %d", i)
 		}
+	}
+}
+
+func BenchmarkMapStringStoreLookup(b *testing.B) {
+	b.ReportAllocs()
+	mapSize := b.N
+	m := make(map[string]uintptr, mapSize)
+	keys := make([]string, mapSize, mapSize)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("000000  %d", mapSize-1)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m[keys[i]] = uintptr(i)
+	}
+	for i := 0; i < b.N; i++ {
+		if _, ok := m[keys[i]]; !ok {
+			b.Fatalf("Missing entry in the map %d", i)
+		}
+	}
+}
+
+type mapItem struct {
+	a int64
+	b int64
+}
+
+func BenchmarkStackAllocationMapString(b *testing.B) {
+	b.ReportAllocs()
+	mapSize := b.N
+	m := make(map[string]mapItem, mapSize)
+	keys := make([]string, mapSize, mapSize)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("000000  %d", mapSize-1)
+	}
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		it := mapItem{a: int64(i), b: int64(i)}
+		m[keys[i]] = it
 	}
 }
 

@@ -33,6 +33,5 @@ A single core system theoretical peak is ~3M events/s. With packet size 64 bytes
 ## Usage
 
 The Cache API is a thin wrapper around Go map[int32]int32 and an expiration queue. The key is a 64 bits signed integer and data is unsafe.Pointer.
-When using "string" key the application is expected to employ it's own hash function. Open problem: How?
 
 See TestAddCustomType() for usage.
