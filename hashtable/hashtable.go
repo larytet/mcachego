@@ -83,6 +83,11 @@ func (h *Hashtable) Reset() {
 	}
 }
 
+// Rehashing
+func getNextIndex(size int, hash uint64, collisions int) int {
+	return int((hash >> uint64(collisions+1)) % uint64(size))
+}
+
 // Store a key:value pair in the hashtable
 func (h *Hashtable) Store(key string, value uintptr) bool {
 	h.statistics.Store += 1
@@ -91,6 +96,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 		key = ""
 	}
 	// This is naive. What I want to do here is sharding based on 8 LSBs
+	// Bad choise of "size" will cause collisions
 	index := int(hash % uint64(h.size))
 	collisions := 0
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
@@ -109,7 +115,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 		} else {
 			// should be  a rare occasion
 			h.statistics.StoreCollision += 1
-			index += 1
+			index = getNextIndex(h.size, hash, collisions+1)
 		}
 	}
 	log.Printf("Faied to add %v:%v, col=%d:%d, index=%d hash=%x", key, value, collisions, h.collisions, index, hash)
@@ -123,7 +129,7 @@ func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 	}
 	index = int(hash % uint64(h.size))
 	collisions = 0
-	for collisions < h.maxCollisions {
+	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := h.data[index]
 		if it.inUse && (hash == it.hash) { //&& (key == it.key)
 			h.statistics.FindSuccess += 1
@@ -131,8 +137,7 @@ func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 		} else {
 			// should be  a rare occasion
 			h.statistics.FindCollision += 1
-			collisions += 1
-			index += 1
+			index = getNextIndex(h.size, hash, collisions+1)
 		}
 	}
 	h.statistics.FindFailed += 1
