@@ -101,11 +101,12 @@ func Nanotime() int64 {
 }
 
 type Statistics struct {
-	evictCalled       uint64
-	evictExpired      uint64
-	evictNotExpired   uint64
-	evictLookupFailed uint64
-	evictPeekFailed   uint64
+	EvictCalled       uint64
+	EvictExpired      uint64
+	EvictNotExpired   uint64
+	EvictLookupFailed uint64
+	EvictPeekFailed   uint64
+	MaxOccupancy      uint64
 }
 
 type Cache struct {
@@ -171,6 +172,10 @@ func (c *Cache) Store(key Key, o Object, now int64) bool {
 	// Where the rest (80ns) comes from?
 	c.data[key] = i
 	ok := c.fifo.add(key)
+	count := uint64(len(c.data))
+	if c.statistics.MaxOccupancy < count {
+		c.statistics.MaxOccupancy = count
+	}
 	return ok
 }
 
@@ -194,22 +199,22 @@ func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
 }
 
 func (c *Cache) evict(now int64) (o Object, expired bool) {
-	c.statistics.evictCalled += 1
+	c.statistics.EvictCalled += 1
 	if key, ok := c.fifo.peek(); ok {
 		if i, ok := c.data[key]; ok {
 			if (i.expirationNs - now) < 0 {
 				c.fifo.remove()
 				delete(c.data, key)
-				c.statistics.evictExpired += 1
+				c.statistics.EvictExpired += 1
 				return i.o, true
 			} else {
-				c.statistics.evictNotExpired += 1
+				c.statistics.EvictNotExpired += 1
 			}
 		} else {
-			c.statistics.evictLookupFailed += 1
+			c.statistics.EvictLookupFailed += 1
 		}
 	} else {
-		c.statistics.evictPeekFailed += 1
+		c.statistics.EvictPeekFailed += 1
 	}
 	return 0, false
 }
