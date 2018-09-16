@@ -156,6 +156,67 @@ func BenchmarkPoolAlloc(b *testing.B) {
 	}
 }
 
+func BenchmarkPoolAllocFree(b *testing.B) {
+	b.ReportAllocs()
+	poolSize := 10 * 1000 * 1000
+	pool := NewPool(reflect.TypeOf(new(MyData)), poolSize)
+	b.N = poolSize
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		p, ok := pool.Alloc()
+		if !ok {
+			b.Fatalf("Failed to allocate an object from the pool %d", i)
+		}
+		ok = pool.Free(p)
+		if !ok {
+			b.Fatalf("Failed to free an object to the pool %d", i)
+		}
+	}
+}
+
+func BenchmarkMapInt32Store(b *testing.B) {
+	mapSize := 1 * 1000 * 1000
+	b.N = mapSize
+	m := make(map[int32]int32, mapSize)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m[int32(i)] = 0
+	}
+}
+
+func BenchmarkMapInt32Delete(b *testing.B) {
+	mapSize := 1 * 1000 * 1000
+	b.N = mapSize
+	m := make(map[int32]int32, mapSize)
+	for i := 0; i < b.N; i++ {
+		m[int32(i)] = int32(i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		delete(m, int32(i))
+	}
+}
+
+func BenchmarkMapInt32Lookup(b *testing.B) {
+	mapSize := 1 * 1000 * 1000
+	b.N = mapSize
+	m := make(map[int32]int32, mapSize)
+	for i := 0; i < b.N; i++ {
+		m[int32(i)] = int32(i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		v, ok := m[int32(i)]
+		if !ok {
+			b.Fatalf("Failed to find entry in the map %d", i)
+		}
+		if v != int32(i) {
+			b.Fatalf("Bad entry in the map %d", i)
+		}
+	}
+}
+
 func BenchmarkAtomicCompareAndSwap(b *testing.B) {
 	idx := int32(0)
 	for i := 0; i < b.N; i++ {
