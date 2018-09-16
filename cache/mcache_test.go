@@ -81,16 +81,6 @@ type MyData struct {
 	b int
 }
 
-func TestPoolAlloc(t *testing.T) {
-	pool := unsafepool.New(reflect.TypeOf(new(MyData)), 1)
-	if _, ok := pool.Alloc(); !ok {
-		t.Fatalf("Failed to allocate an object from the pool")
-	}
-	if _, ok := pool.Alloc(); ok {
-		t.Fatalf("Did not fail on empty pool")
-	}
-}
-
 func TestAddCustomType(t *testing.T) {
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), 1)
 	ptr, ok := pool.Alloc()
