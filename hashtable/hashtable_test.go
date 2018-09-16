@@ -67,7 +67,7 @@ func BenchmarkHashtableStore(b *testing.B) {
 
 func BenchmarkHashtableLoad(b *testing.B) {
 	b.ReportAllocs()
-	h := New(2*b.N, 8)
+	h := New(2*b.N, 16)
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
