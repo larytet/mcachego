@@ -32,8 +32,9 @@ type Pool struct {
 	statistics  *Statistics
 }
 
-func New(t reflect.Type, objectCount int) (p *Pool) {
-	objectSize := int(unsafe.Sizeof(t))
+// Create a memory pool of objectCount objects of type objectType
+func New(objectType reflect.Type, objectCount int) (p *Pool) {
+	objectSize := int(unsafe.Sizeof(objectType))
 	p = new(Pool)
 	p.objectSize, p.objectCount = objectSize, objectCount
 	p.data = make([]byte, objectSize*objectCount, objectSize*objectCount)
