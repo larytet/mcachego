@@ -138,7 +138,9 @@ func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 	if index, ok, _ := h.find(key); ok {
 		h.statistics.LoadSuccess += 1
 		it := h.data[index]
-		return it.value, true
+		value = it.value
+		log.Printf("Found %v:%v, %d", key, value, index)
+		return value, true
 	}
 	h.statistics.LoadFailed += 1
 	return 0, false
