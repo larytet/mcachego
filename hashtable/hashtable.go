@@ -159,6 +159,7 @@ func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
 		value = it.value
 		log.Printf("Removing %v:%v, %d", key, value, index)
 		it.reset()
+		h.data[index] = it
 		return value, true
 	}
 	h.statistics.RemoveFailed += 1
