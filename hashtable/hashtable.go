@@ -46,6 +46,7 @@ func (i *item) reset() {
 	i.inUse = false
 	//i.key = ""
 	i.hash = 0
+	i.value = 0
 }
 
 // This is copy&paste from https://github.com/larytet/emcpp/blob/master/src/HashTable.h
@@ -101,6 +102,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	index := int(hash % uint64(h.size))
 	collisions := 0
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
+		// likely a cache miss here
 		it := &h.data[index]
 		// The next line - first fetch - consumes lot of CPU cycles. Why?
 		if !it.inUse {
@@ -165,7 +167,7 @@ func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
 		if collisions > 0 {
 			h.collisions -= 1
 		}
-		// TODO I can move all colliding items left here and find a match
+		// TODO I can move all colliding items left and find a match
 		// faster next time.
 
 		// I can save some races by paying a copy
