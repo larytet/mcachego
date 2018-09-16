@@ -132,17 +132,24 @@ func TestAddCustomType(t *testing.T) {
 }
 
 func TestHashtable(t *testing.T) {
-	h := hashtable.New(3, 2)
-	ok := h.Store("0", 0)
-	if !ok {
-		t.Fatalf("Failed to store value in the hashtable")
+	size := 10
+	h := hashtable.New(size, 2)
+	for i := 0; i < size; i++ {
+		key := fmt.Sprintf("%d", i)
+		ok := h.Store(key, uintptr(i))
+		if !ok {
+			t.Fatalf("Failed to store value %v in the hashtable", i)
+		}
 	}
-	v, ok := h.Load("0")
-	if !ok {
-		t.Fatalf("Failed to find value in the hashtable")
-	}
-	if v != 0 {
-		t.Fatalf("Got %v instead of '0' from the hashtable", v)
+	for i := 0; i < size; i++ {
+		key := fmt.Sprintf("%d", i)
+		v, ok := h.Load(key)
+		if !ok {
+			t.Fatalf("Failed to find key %v in the hashtable", key)
+		}
+		if v != uintptr(i) {
+			t.Fatalf("Got %v instead of %v from the hashtable", v, i)
+		}
 	}
 }
 
