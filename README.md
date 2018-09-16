@@ -32,6 +32,18 @@ A single core system theoretical peak is ~3M events/s. With packet size 64 bytes
 
 ## Usage
 
-The Cache API is a thin wrapper around Go map[int32]int32 and an expiration queue. The key is a 64 bits signed integer and data is unsafe.Pointer.
+The Cache API is a thin wrapper around Go map[int32]int32 and an expiration queue. The key is a string and data is unsafe.Pointer.
 
 See TestAddCustomType() for usage.
+
+
+## Similar projects 
+
+* https://github.com/patrickmn/go-cache
+* https://github.com/allegro/bigcache
+* https://github.com/coocood/freecache
+* https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
+* https://github.com/koding/cache
+* https://github.com/sch00lb0y/vegamcache
+* https://github.com/OneOfOne/cmap
+* https://github.com/golang/groupcache
