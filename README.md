@@ -15,7 +15,7 @@ Benchmarks:
 	BenchmarkLoad-4    	50000000	       129 ns/op
 	BenchmarkEvict-4   	50000000	       222 ns/op
 
-It gives 5-10M cache operations/s on a single core. Round trip allocation from a pool, store in cache, evict from cache, free to the pool 360ns
+It gives 5-10M cache operations/s on a single core. Round trip allocation from a pool-store in cache-evict from cache-free to the pool requires 360ns. 
 A single core system theoretical peak is ~3M events/s. With packet size 64 bytes this code can handle 100Mb/s line.
 
 In the pprof map API dominates the CPU consumption
