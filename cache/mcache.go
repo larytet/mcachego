@@ -100,6 +100,14 @@ func Nanotime() int64 {
 	return nanotime()
 }
 
+type Statistics struct {
+	evictCalled       uint64
+	evictExpired      uint64
+	evictNotExpired   uint64
+	evictLookupFailed uint64
+	evictPeekFailed   uint64
+}
+
 type Cache struct {
 	// GC is going to poll the cache entries. I can try map[init]int and cast int to
 	// a (unsafe?) pointer in the arrays of strings and structures.
@@ -110,8 +118,9 @@ type Cache struct {
 	mutex sync.RWMutex
 	ttl   int64
 	// FIFO of the items to support eviction of the expired entries
-	fifo *itemFifo
-	size int
+	fifo       *itemFifo
+	size       int
+	statistics *Statistics
 }
 
 var ns = int64(1000 * 1000)
@@ -119,19 +128,27 @@ var ns = int64(1000 * 1000)
 func New(size int, ttl int64) *Cache {
 	c := new(Cache)
 	c.size = size
-	c.data = make(map[Key]item, size)
 	c.ttl = ns * ttl
-	c.fifo = newFifo(size)
+	c.Reset()
 	return c
 }
 
+// Occupancy
 func (c *Cache) Len() int {
 	return len(c.data)
 }
 
+// Accomodations
+func (c *Cache) Size() int {
+	return c.fifo.size
+}
+
 func (c *Cache) Reset() {
+	// Probably faster and more reliable to allocate everything
+	// than try to call delete()
 	c.fifo = newFifo(c.size)
 	c.data = make(map[Key]item, c.size)
+	c.statistics = new(Statistics)
 }
 
 // Add an object to the cache
@@ -177,17 +194,22 @@ func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
 }
 
 func (c *Cache) evict(now int64) (o Object, expired bool) {
+	c.statistics.evictCalled += 1
 	if key, ok := c.fifo.peek(); ok {
 		if i, ok := c.data[key]; ok {
 			if (i.expirationNs - now) < 0 {
 				c.fifo.remove()
 				delete(c.data, key)
+				c.statistics.evictExpired += 1
 				return i.o, true
 			} else {
-				return 0, false
+				c.statistics.evictNotExpired += 1
 			}
 		} else {
+			c.statistics.evictLookupFailed += 1
 		}
+	} else {
+		c.statistics.evictPeekFailed += 1
 	}
 	return 0, false
 }
