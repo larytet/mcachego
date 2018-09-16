@@ -2,6 +2,7 @@ package hashtable
 
 import (
 	"github.com/cespare/xxhash"
+	"log"
 	"sync"
 )
 
@@ -40,6 +41,12 @@ type item struct {
 	inUse bool
 }
 
+func (i *item) reset() {
+	i.inUse = false
+	i.key = ""
+	i.hash = 0
+}
+
 // This is copy&paste from https://github.com/larytet/emcpp/blob/master/src/HashTable.h
 type Hashtable struct {
 	size          int
@@ -68,9 +75,8 @@ func New(size int, maxCollisions int) (h *Hashtable) {
 
 func (h *Hashtable) Reset() {
 	// GC will remove strings anyway. Better I will perform the loop
-	for _, v := range h.data {
-		v.inUse = false
-		v.key = ""
+	for _, it := range h.data {
+		it.reset()
 	}
 }
 
@@ -92,6 +98,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			if collisions > 0 {
 				h.collisions += 1
 			}
+			log.Printf("Added %v:%v, %d", key, value, index)
 			return true
 		} else {
 			// should be  a rare occasion
@@ -147,8 +154,10 @@ func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
 		// TODO I can move all colliding items left here and find a match
 		// faster next time.
 		it := h.data[index]
-		it.inUse = false
-		return it.value, true
+		value = it.value
+		log.Printf("Removing %v:%v, %d", key, value, index)
+		it.reset()
+		return value, true
 	}
 	h.statistics.RemoveFailed += 1
 	return 0, false

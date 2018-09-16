@@ -47,7 +47,7 @@ func TestHashtable(t *testing.T) {
 	}
 }
 
-func BenchmarkStore(b *testing.B) {
+func Benchm1arkStore(b *testing.B) {
 	b.ReportAllocs()
 	h := New(2*b.N, 5)
 	keys := make([]string, b.N, b.N)
