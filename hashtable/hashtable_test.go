@@ -49,7 +49,7 @@ func TestHashtable(t *testing.T) {
 
 func BenchmarkStore(b *testing.B) {
 	b.ReportAllocs()
-	h := New(32*b.N, 3)
+	h := New(32*b.N, 5)
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
