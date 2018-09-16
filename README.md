@@ -1,4 +1,4 @@
-Yet another Go cache. I need the fastest possible implementation with optional synchronizaton
+This is yet another Go cache. I need the fastest possible implementation with optional synchronizaton.
 
 * Carefully avoid allocations from the heap in the Store()/Load() API
 * Use runtime.nanotime()
@@ -6,6 +6,7 @@ Yet another Go cache. I need the fastest possible implementation with optional s
 * Eviction of expired entries is up to the application
 * Minimalistic API
 * Eviction only via expiration
+* "Unsafe" memory pool 
 
 
 Benchmarks:
