@@ -126,7 +126,7 @@ func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
 			h.collisions -= 1
 		}
 		// TODO I can move all colliding items left here and find a match
-		// faster next time
+		// faster next time.
 		it := h.data[index]
 		it.inUse = false
 		return item.value, true
