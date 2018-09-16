@@ -19,7 +19,13 @@ type Statistics struct {
 	StoreCollision uint64
 	Load           uint64
 	LoadSuccess    uint64
-	LoadCollision  uint64
+	LoadFailed     uint64
+	FindSuccess    uint64
+	FindCollision  uint64
+	FindFailed     uint64
+	Remove         uint64
+	RemoveSuccess  uint64
+	RemoveFailed   uint64
 }
 
 type item struct {
@@ -89,8 +95,8 @@ func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 	if h.RelyOnHash {
 		key = ""
 	}
-	index := int(hash % uint64(h.size))
-	collisions := 0
+	index = int(hash % uint64(h.size))
+	collisions = 0
 	for collisions < h.maxCollisions {
 		it := h.data[index]
 		if it.inUse && (hash == it.hash) && (key == it.key) {
@@ -129,7 +135,7 @@ func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
 		// faster next time.
 		it := h.data[index]
 		it.inUse = false
-		return item.value, true
+		return it.value, true
 	}
 	h.statistics.RemoveFailed += 1
 	return 0, false
