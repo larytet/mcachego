@@ -103,7 +103,7 @@ type Cache struct {
 	// GC is going to poll the cache entries. I can try map[init]int and cast int to
 	// a (unsafe?) pointer in the arrays of strings and structures.
 	// Inside of the "item" I keep an address of the "item" allocated from a pool
-	// map[int]int is 20% faster than map[int]item
+	// Insertion into the map[int]int is 20% faster than map[int]item :100ns vs 120ns
 	data  map[Key]item
 	mutex sync.RWMutex
 	ttl   int64
