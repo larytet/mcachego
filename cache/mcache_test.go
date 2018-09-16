@@ -115,6 +115,9 @@ func TestAddCustomType(t *testing.T) {
 	if myData.a != 1 || myData.b != 2 {
 		t.Fatalf("Failed to recover the original data %v", myData)
 	}
+	if !pool.Belongs(unsafe.Pointer(o)) {
+		t.Fatalf("Bad pointer %v is allocated from the pool", o)
+	}
 	if ok = pool.Free(unsafe.Pointer(o)); !ok {
 		t.Fatalf("Failed to free ptr %v", o)
 	}
@@ -144,6 +147,9 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 		}
 		if p == unsafe.Pointer(uintptr(0)) {
 			b.Fatalf("Nil is allocated from the pool %d", i)
+		}
+		if !pool.Belongs(p) {
+			b.Fatalf("Bad pointer %p is allocated from the pool", p)
 		}
 		if ok := cache.Store(Key(keys[i]), Object(p), now); !ok {
 			b.Fatalf("Failed to add item %d", i)

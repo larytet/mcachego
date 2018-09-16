@@ -107,6 +107,15 @@ func (p *Pool) Free(ptr unsafe.Pointer) bool {
 	}
 }
 
+// Returns true if the ptr is from the pool
+func (p *Pool) Belongs(ptr unsafe.Pointer) bool {
+	res := true
+	res = res && (uintptr(ptr) >= p.minAddr)
+	res = res && (uintptr(ptr) <= p.maxAddr)
+	res = res && (((uintptr(ptr) - p.minAddr) % uintptr(p.objectSize)) == 0)
+	return res
+}
+
 func (p *Pool) GetStatistics() Statistics {
 	return *p.statistics
 }
