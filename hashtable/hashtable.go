@@ -66,6 +66,7 @@ type Hashtable struct {
 
 func New(size int, maxCollisions int) (h *Hashtable) {
 	h = new(Hashtable)
+	size = getPrime(size)
 	h.size = size
 	h.maxCollisions = maxCollisions
 	// allow collision for the last entry in the table
@@ -88,6 +89,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	if h.RelyOnHash {
 		key = ""
 	}
+	// This is naive. What I want to do here is sharding based on 8 LSBs
 	index := int(hash % uint64(h.size))
 	collisions := 0
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
@@ -109,7 +111,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			index += 1
 		}
 	}
-	log.Printf("Faied to add %v:%v, col=%d:%d, index=%d hash=%d", key, value, collisions, h.collisions, index, hash)
+	log.Printf("Faied to add %v:%v, col=%d:%d, index=%d hash=%x", key, value, collisions, h.collisions, index, hash)
 	return false
 }
 
@@ -180,4 +182,18 @@ func (h *Hashtable) Resize(factor int) bool {
 // Returns number of collisions in the table
 func (h *Hashtable) Collisions() int {
 	return h.collisions
+}
+
+// Return 2^n-1
+// TODO return a real prime
+// See https://stackoverflow.com/questions/21854191/generating-prime-numbers-in-go
+// https://github.com/agis/gofool/blob/master/atkin.go
+func getPrime(N int) int {
+	v := 1
+	res := 1
+	for i := 0; res < N; i++ {
+		v = v << 1
+		res = v - 1
+	}
+	return res
 }

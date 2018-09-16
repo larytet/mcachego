@@ -47,9 +47,10 @@ func TestHashtable(t *testing.T) {
 	}
 }
 
+// So far 100ns per Store()
 func BenchmarkHashtableStore(b *testing.B) {
 	b.ReportAllocs()
-	h := New(4*b.N, 32)
+	h := New(2*b.N, 32)
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
@@ -66,7 +67,7 @@ func BenchmarkHashtableStore(b *testing.B) {
 
 func BenchmarkHashtableLoad(b *testing.B) {
 	b.ReportAllocs()
-	h := New(2*b.N, 128)
+	h := New(2*b.N, 32)
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
