@@ -102,7 +102,8 @@ func Nanotime() int64 {
 type Cache struct {
 	// GC is going to poll the cache entries. I can try map[init]int and cast int to
 	// a (unsafe?) pointer in the arrays of strings and structures.
-	// I keep an address of the "item" allocated from a pool
+	// Inside of the "item" I keep an address of the "item" allocated from a pool
+	// map[int]int is 20% faster than map[int]item
 	data  map[Key]item
 	mutex sync.RWMutex
 	ttl   int64
@@ -131,14 +132,25 @@ func (c *Cache) Reset() {
 	c.data = make(map[Key]item, c.size)
 }
 
+// Add an object to the cache
+// This is the single most expensive function in the code - 160ns/op
 func (c *Cache) Store(key Key, o Object, now int64) bool {
 	// Create an entry on the stack, copy 128 bits
-	// Probably adds 2ns
+	// These two lines of code add 20% overhead
+	// because I use map[int]item instead of map[int]int
+
 	// I can save an assignment here by using user prepared items
 	// The idea is to require using of the UnsafePool() and pad 64 bits
 	// expirationNs to the user structure
 	// This is very C/C++ style
-	c.data[key] = item{o: o, expirationNs: now + c.ttl}
+
+	// A temporary variable helps to profile
+	i := item{o: o, expirationNs: now + c.ttl}
+
+	// 85% of the CPU cycles are spent here. Go lang map is rather slow
+	// Trivial map[int32]int32 requires 90ns to add an entry
+	// Where the rest (80ns) comes from?
+	c.data[key] = i
 	ok := c.fifo.add(key)
 	return ok
 }

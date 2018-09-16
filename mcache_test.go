@@ -156,6 +156,20 @@ func BenchmarkPoolAlloc(b *testing.B) {
 	}
 }
 
+func BenchmarkStackAllocationMap(b *testing.B) {
+	now := nanotime()
+	mapSize := 10 * 1000 * 1000
+	b.ReportAllocs()
+	b.N = mapSize
+	m := make(map[uintptr]uintptr, mapSize)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		i := item{o: Object(i), expirationNs: now + TTL}
+		m[uintptr(i.o)] = uintptr(i.o)
+	}
+}
+
 func BenchmarkFifo(b *testing.B) {
 	fifoSize := 10 * 1000 * 1000
 	fifo := newFifo(fifoSize)
