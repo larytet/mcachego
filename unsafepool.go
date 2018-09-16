@@ -6,8 +6,8 @@ import (
 	"unsafe"
 )
 
-// I am replacing the whole Go  memory managemnt, It is safer (no pun)
-// to provide
+// In the cache API I am replacing the whole Go  memory managemnt,
+// It is safer (no pun) to provide
 // an API for the application which demos a HowTo
 // Application needs a pool to allocate users objects
 // and keep the objects in the cache
