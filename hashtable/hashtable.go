@@ -66,7 +66,8 @@ type Hashtable struct {
 
 func New(size int, maxCollisions int) (h *Hashtable) {
 	h = new(Hashtable)
-	size = getPrime(size)
+	size = getPower2(size)
+	//size = getPrime(size)
 	h.size = size
 	h.maxCollisions = maxCollisions
 	// allow collision for the last entry in the table
@@ -184,11 +185,11 @@ func (h *Hashtable) Collisions() int {
 	return h.collisions
 }
 
-// Return 2^n-1
-// TODO return a real prime
+// Using 2^n-1 I have 20% collisions rate
+// A real prime does not improve much
 // See https://stackoverflow.com/questions/21854191/generating-prime-numbers-in-go
 // https://github.com/agis/gofool/blob/master/atkin.go
-func getPrime(N int) int {
+func getPower2(N int) int {
 	v := 1
 	res := 1
 	for i := 0; res < N; i++ {
