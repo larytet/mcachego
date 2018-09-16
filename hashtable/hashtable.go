@@ -75,6 +75,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			}
 			return true
 		} else {
+			// should be  a rare occasion
 			collisions += 1
 			h.statistics.StoreCollision += 1
 			index += 1
@@ -83,8 +84,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	return false
 }
 
-func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
-	h.statistics.Load += 1
+func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 	hash := xxhash.Sum64String(key)
 	if h.RelyOnHash {
 		key = ""
@@ -92,20 +92,46 @@ func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 	index := int(hash % uint64(h.size))
 	collisions := 0
 	for collisions < h.maxCollisions {
-		item := h.data[index]
-		if item.inUse && (hash == item.hash) && (key == item.key) {
-			h.statistics.LoadSuccess += 1
-			return item.value, true
+		it := h.data[index]
+		if it.inUse && (hash == it.hash) && (key == it.key) {
+			h.statistics.FindSuccess += 1
+			return index, true, collisions
 		} else {
-			h.statistics.LoadCollision += 1
+			// should be  a rare occasion
+			h.statistics.FindCollision += 1
 			collisions += 1
 			index += 1
 		}
 	}
+	h.statistics.FindFailed += 1
+	return 0, false, collisions
+}
+
+func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
+	h.statistics.Load += 1
+	if index, ok, _ := h.find(key); ok {
+		h.statistics.LoadSuccess += 1
+		it := h.data[index]
+		return it.value, true
+	}
+	h.statistics.LoadFailed += 1
 	return 0, false
 }
 
 func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
+	h.statistics.Remove += 1
+	if index, ok, collisions := h.find(key); ok {
+		h.statistics.RemoveSuccess += 1
+		if collisions > 0 {
+			h.collisions -= 1
+		}
+		// TODO I can move all colliding items left here and find a match
+		// faster next time
+		it := h.data[index]
+		it.inUse = false
+		return item.value, true
+	}
+	h.statistics.RemoveFailed += 1
 	return 0, false
 }
 
