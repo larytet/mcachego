@@ -79,7 +79,7 @@ type MyData struct {
 }
 
 func TestPoolAlloc(t *testing.T) {
-	pool := NewPool(reflect.TypeOf(new(MyData)), 1)
+	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), 1)
 	if _, ok := pool.Alloc(); !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
 	}
@@ -89,7 +89,7 @@ func TestPoolAlloc(t *testing.T) {
 }
 
 func TestAddCustomType(t *testing.T) {
-	pool := NewPool(reflect.TypeOf(new(MyData)), 1)
+	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), 1)
 	ptr, ok := pool.Alloc()
 	if !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
@@ -144,7 +144,7 @@ func BenchmarkHashFnv(b *testing.B) {
 func BenchmarkPoolAlloc(b *testing.B) {
 	b.ReportAllocs()
 	poolSize := 10 * 1000 * 1000
-	pool := NewPool(reflect.TypeOf(new(MyData)), poolSize)
+	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), poolSize)
 	b.N = poolSize
 	b.ResetTimer()
 
@@ -159,7 +159,7 @@ func BenchmarkPoolAlloc(b *testing.B) {
 func BenchmarkPoolAllocFree(b *testing.B) {
 	b.ReportAllocs()
 	poolSize := 10 * 1000 * 1000
-	pool := NewPool(reflect.TypeOf(new(MyData)), poolSize)
+	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), poolSize)
 	b.N = poolSize
 	b.ResetTimer()
 

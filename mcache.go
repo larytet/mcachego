@@ -9,13 +9,16 @@ type Key int64
 
 // I have three  choices here:
 //  * Allow the user to specify Object type
-//  * Use interface{}
+//  * Use type Object interface{}
 //  * Use uintptr() to the user defined structures
-// If I use a type and GC safe interface{} somewhere up the stack somebody will have to type assert Object and pay 20ns
+// Without generics I will need a separate cache for every user type
+// If I use a type safe and GC safe interface{}, somewhere up the stack somebody will have to type assert Object
+// and pay 20ns per Load()
 // See https://stackoverflow.com/questions/28024884/does-a-type-assertion-type-switch-have-bad-performance-is-slow-in-go
 // Can I use unsafe pointers to the users objects and cast to int64?
-// See also insane noescape() in https://segment.com/blog/allocation-efficiency-in-high-performance-go-services/
-// Object     interface{}
+// See also insane runtime.noescape() discussion
+//  in https://segment.com/blog/allocation-efficiency-in-high-performance-go-services/
+// The user is expected to allocate the pointers from a pool like UnsafePool
 type Object uintptr
 
 // Straight from https://github.com/patrickmn/go-cache

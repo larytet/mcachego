@@ -25,3 +25,4 @@ In the pprof map API dominates the CPU consumption
      5.52s 18.10% 74.52%      5.90s 19.34%  runtime.mapaccess2_fast64
 
 See TestAddCustomType() for usage.
+

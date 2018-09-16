@@ -12,7 +12,7 @@ import (
 // Application needs a pool to allocate users objects
 // and keep the objects in the cache
 // This is a lock free memory pool of objects of the same size
-type Pool struct {
+type UnsafePool struct {
 	top         int32
 	stack       []unsafe.Pointer
 	data        []byte
@@ -22,9 +22,9 @@ type Pool struct {
 	minAddr     uintptr
 }
 
-func NewPool(t reflect.Type, objectCount int) (p *Pool) {
+func NewUnsafePool(t reflect.Type, objectCount int) (p *UnsafePool) {
 	objectSize := int(unsafe.Sizeof(t))
-	p = new(Pool)
+	p = new(UnsafePool)
 	p.objectSize, p.objectCount = objectSize, objectCount
 	p.data = make([]byte, objectSize*objectCount, objectSize*objectCount)
 	p.stack = make([]unsafe.Pointer, objectCount, objectCount)
@@ -34,14 +34,14 @@ func NewPool(t reflect.Type, objectCount int) (p *Pool) {
 	return p
 }
 
-func (p *Pool) Reset() {
+func (p *UnsafePool) Reset() {
 	for i := 0; i < p.objectCount; i += 1 {
 		p.stack[i] = unsafe.Pointer(&p.data[i*p.objectSize])
 	}
 	p.top = int32(p.objectCount)
 }
 
-func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
+func (p *UnsafePool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	for p.top > 0 {
 		top := p.top
 		if atomic.CompareAndSwapInt32(&p.top, top, top-1) {
@@ -52,7 +52,7 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	return nil, false
 }
 
-func (p *Pool) Free(ptr unsafe.Pointer) bool {
+func (p *UnsafePool) Free(ptr unsafe.Pointer) bool {
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
 		return false
 	}
