@@ -30,11 +30,11 @@ type Statistics struct {
 }
 
 type item struct {
-	// I keep pointers to strings. This is bad for GC.
+	// I keep pointers to strings. This is bad for GC - triggers runtime.scanobject()
 	// Can I copy the string to a large buffer and use an index in the buffer instead
 	// of the string address? What are alternatives?
 	// I can also rely on 64 bits (or 128 bits) hash and report collisions
-	key string
+	// key string
 	// 64 bits hash of the key for quick compare
 	hash  uint64
 	value uintptr
@@ -44,7 +44,7 @@ type item struct {
 
 func (i *item) reset() {
 	i.inUse = false
-	i.key = ""
+	//i.key = ""
 	i.hash = 0
 }
 
@@ -90,12 +90,12 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	}
 	index := int(hash % uint64(h.size))
 	collisions := 0
-	for collisions < h.maxCollisions {
+	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
 		if !it.inUse {
 			h.statistics.StoreSuccess += 1
 			it.inUse = true
-			it.key = key
+			//it.key = key
 			it.hash = hash
 			it.value = value
 			// This store added one collision
@@ -105,7 +105,6 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			return true
 		} else {
 			// should be  a rare occasion
-			collisions += 1
 			h.statistics.StoreCollision += 1
 			index += 1
 		}
@@ -123,7 +122,7 @@ func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 	collisions = 0
 	for collisions < h.maxCollisions {
 		it := h.data[index]
-		if it.inUse && (hash == it.hash) && (key == it.key) {
+		if it.inUse && (hash == it.hash) { //&& (key == it.key)
 			h.statistics.FindSuccess += 1
 			return index, true, collisions
 		} else {
