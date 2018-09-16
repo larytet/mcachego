@@ -94,7 +94,10 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 		it := &h.data[index]
 		if !it.inUse {
 			h.statistics.StoreSuccess += 1
-			*it = item{key: key, hash: hash, value: value, inUse: true}
+			it.inUse = true
+			it.key = key
+			it.hash = hash
+			it.value = value
 			// This store added one collision
 			if collisions > 0 {
 				h.collisions += 1
