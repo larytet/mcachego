@@ -54,3 +54,4 @@ See TestAddCustomType() for usage.
 * https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
 * https://dave.cheney.net/2018/05/29/how-the-go-runtime-implements-maps-efficiently-without-generics
 * https://medium.com/@ConnorPeet/go-maps-are-not-o-1-91c1e61110bf
+* https://dzone.com/articles/so-you-wanna-go-fast

@@ -73,13 +73,14 @@ func New(size int, maxCollisions int) (h *Hashtable) {
 	// allow collision for the last entry in the table
 	count := size + maxCollisions
 	h.data = make([]item, count, count)
+	h.Reset()
 	return h
 }
 
 func (h *Hashtable) Reset() {
 	// GC will remove strings anyway. Better I will perform the loop
-	for _, it := range h.data {
-		it.reset()
+	for i := 0; i < len(h.data); i++ {
+		h.data[i].reset()
 	}
 }
 
@@ -101,6 +102,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	collisions := 0
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
+		// The next line - first fetch - consumes lot of CPU cycles. Why?
 		if !it.inUse {
 			h.statistics.StoreSuccess += 1
 			it.inUse = true
