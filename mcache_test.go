@@ -253,6 +253,36 @@ func BenchmarkLocalCounter(b *testing.B) {
 var cacheSize = 10 * 1000 * 1000
 var cache = New(cacheSize, int64(TTL))
 
+func BenchmarkAllocStoreEvictFree(b *testing.B) {
+	b.ReportAllocs()
+	poolSize := cacheSize
+	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), poolSize)
+	b.N = poolSize
+	now := nanotime()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		p, ok := pool.Alloc()
+		if !ok {
+			b.Fatalf("Failed to allocate an object from the pool %d", i)
+		}
+		if ok := cache.Store(Key(i), Object(p), now); !ok {
+			b.Fatalf("Failed to add item %d", i)
+		}
+	}
+	now += 1000*1000*TTL + 1
+	for i := 0; i < b.N; i++ {
+		p, expired, _ := cache.Evict(now)
+		if !expired {
+			b.Fatalf("Failed to evict %v", i)
+		}
+		ok := pool.Free(unsafe.Pointer(p))
+		if !ok {
+			b.Fatalf("Failed to free an object %p to the pool %d", unsafe.Pointer(p), i)
+		}
+	}
+}
+
 // 150ns cache.Store()
 func BenchmarkStore(b *testing.B) {
 	b.ReportAllocs()

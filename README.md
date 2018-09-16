@@ -15,7 +15,7 @@ Benchmarks:
 	BenchmarkLoad-4    	50000000	       129 ns/op
 	BenchmarkEvict-4   	50000000	       222 ns/op
 
-It gives 1-2B operations/s on a single core
+It gives 1-2B cache operations/s on a single core. Round trip allocation from a pool, store in cache, evict from cache, free to the pool 360ns
 
 In the pprof map API dominates the CPU consumption
 
