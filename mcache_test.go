@@ -127,8 +127,10 @@ var fnvSum uint32
 
 // 40ns per hash
 func BenchmarkHashFnv(b *testing.B) {
+	b.ReportAllocs()
 	s := "google.com."
 	h := fnv.New32a()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		h.Reset()
 		h.Write([]byte(s))
@@ -138,6 +140,7 @@ func BenchmarkHashFnv(b *testing.B) {
 
 // 10ns/allocation
 func BenchmarkPoolAlloc(b *testing.B) {
+	b.ReportAllocs()
 	poolSize := 10 * 1000 * 1000
 	pool := NewPool(reflect.TypeOf(new(MyData)), poolSize)
 	b.N = poolSize
@@ -156,6 +159,7 @@ var cache = New(cacheSize, int64(TTL))
 
 // 150ns cache.Store()
 func BenchmarkStore(b *testing.B) {
+	b.ReportAllocs()
 	now := nanotime()
 	cache.Reset()
 	b.ResetTimer()
@@ -168,6 +172,7 @@ func BenchmarkStore(b *testing.B) {
 
 // 120ns cache.Load()
 func BenchmarkLoad(b *testing.B) {
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		cache.Load(Key(i))
 	}
@@ -175,6 +180,7 @@ func BenchmarkLoad(b *testing.B) {
 
 // 180ns cache.Evict()
 func BenchmarkEvict(b *testing.B) {
+	b.ReportAllocs()
 	cache.Reset()
 	now := nanotime()
 	for i := 0; i < b.N; i++ {
