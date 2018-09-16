@@ -166,6 +166,13 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 			b.Fatalf("Failed to free an object %p to the pool in the iteration %d", unsafe.Pointer(p), i)
 		}
 	}
+	s := pool.GetStatistics()
+	if s.AllocLockCongested != 0 {
+		b.Fatalf("Alloc congestion %d", s.AllocLockCongested)
+	}
+	if s.FreeLockCongested != 0 {
+		b.Fatalf("Free congestion %d", s.AllocLockCongested)
+	}
 }
 
 var fnvSum uint32
