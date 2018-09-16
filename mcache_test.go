@@ -3,6 +3,7 @@ package mcache
 import (
 	"hash/fnv"
 	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
@@ -138,7 +139,8 @@ func BenchmarkHashFnv(b *testing.B) {
 	}
 }
 
-// 10ns/allocation
+// 10ns/allocation - suprisingly expensive
+// 32/64 bits compare and swap do not impact the performance
 func BenchmarkPoolAlloc(b *testing.B) {
 	b.ReportAllocs()
 	poolSize := 10 * 1000 * 1000
@@ -151,6 +153,13 @@ func BenchmarkPoolAlloc(b *testing.B) {
 		if !ok {
 			b.Fatalf("Failed to allocate an object from the pool %d", i)
 		}
+	}
+}
+
+func BenchmarkAtomicCompareAndSwap(b *testing.B) {
+	idx := int32(0)
+	for i := 0; i < b.N; i++ {
+		atomic.CompareAndSwapInt32(&idx, idx, idx+1)
 	}
 }
 

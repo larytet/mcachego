@@ -13,7 +13,7 @@ import (
 // and keep the objects in the cache
 // This is a lock free memory pool of objects of the same size
 type Pool struct {
-	top         int64
+	top         int32
 	stack       []unsafe.Pointer
 	data        []byte
 	objectSize  int
@@ -38,13 +38,13 @@ func (p *Pool) Reset() {
 	for i := 0; i < p.objectCount; i += 1 {
 		p.stack[i] = unsafe.Pointer(&p.data[i*p.objectSize])
 	}
-	p.top = int64(p.objectCount)
+	p.top = int32(p.objectCount)
 }
 
 func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	for p.top > 0 {
 		top := p.top
-		if atomic.CompareAndSwapInt64(&p.top, top, top-1) {
+		if atomic.CompareAndSwapInt32(&p.top, top, top-1) {
 			// success, I decremented p.top
 			return p.stack[top-1], true
 		}
@@ -58,7 +58,7 @@ func (p *Pool) Free(ptr unsafe.Pointer) bool {
 	}
 	for {
 		top := p.top
-		if atomic.CompareAndSwapInt64(&p.top, top, top+1) {
+		if atomic.CompareAndSwapInt32(&p.top, top, top+1) {
 			// success, I incremented p.top
 			p.stack[top] = ptr
 			return true
