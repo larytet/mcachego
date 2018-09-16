@@ -5,7 +5,8 @@ import (
 	_ "unsafe" // I need this for runtime.nanotime()
 )
 
-type Key int64
+// a string key and int32 key have roughly the same benchmarks (!?)
+type Key string
 
 // I have three  choices here:
 //  * Allow the user to specify Object type
@@ -176,19 +177,19 @@ func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
 }
 
 func (c *Cache) evict(now int64) (o Object, expired bool) {
-	key, ok := c.fifo.peek()
-	if ok {
-		i := c.data[key]
-		if (i.expirationNs - now) < 0 {
-			c.fifo.remove()
-			delete(c.data, key)
-			return i.o, true
+	if key, ok := c.fifo.peek(); ok {
+		if i, ok := c.data[key]; ok {
+			if (i.expirationNs - now) < 0 {
+				c.fifo.remove()
+				delete(c.data, key)
+				return i.o, true
+			} else {
+				return 0, false
+			}
 		} else {
-			return 0, false
 		}
-	} else {
-		return 0, false
 	}
+	return 0, false
 }
 
 func (c *Cache) Evict(now int64) (o Object, expired bool, nextExpirationNs int64) {
