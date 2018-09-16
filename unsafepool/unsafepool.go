@@ -89,6 +89,8 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 }
 
 // Return previously allocated block to the pool
+// The pool does not protect agains double free. I could mark the blocks
+// as freed/allocated. Probably this is way too C/C++
 func (p *Pool) Free(ptr unsafe.Pointer) bool {
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
 		p.statistics.FreeBadAddress += 1
