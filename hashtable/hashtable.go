@@ -58,6 +58,10 @@ type Hashtable struct {
 
 func New(size int, maxCollisions int) (h *Hashtable) {
 	h = new(Hashtable)
+	h.size = size
+	h.maxCollisions = maxCollisions
+	count := size * (maxCollisions + 1)
+	h.data = make([]item, count, count)
 	return h
 }
 
