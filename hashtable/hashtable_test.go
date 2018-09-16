@@ -47,12 +47,12 @@ func TestHashtable(t *testing.T) {
 	}
 }
 
-func Benchm1arkStore(b *testing.B) {
+func BenchmarkStore(b *testing.B) {
 	b.ReportAllocs()
-	h := New(2*b.N, 5)
+	h := New(32*b.N, 5)
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", b.N-i)
+		keys[i] = fmt.Sprintf("%d", b.N-i)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

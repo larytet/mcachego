@@ -38,6 +38,7 @@ type item struct {
 	// 64 bits hash of the key for quick compare
 	hash  uint64
 	value uintptr
+	// I can "state int64" instead and atomic compareAndSwap to allocate the entry
 	inUse bool
 }
 
@@ -90,15 +91,14 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	index := int(hash % uint64(h.size))
 	collisions := 0
 	for collisions < h.maxCollisions {
-		it := h.data[index]
+		it := &h.data[index]
 		if !it.inUse {
 			h.statistics.StoreSuccess += 1
-			h.data[index] = item{key: key, hash: hash, value: value, inUse: true}
+			*it = item{key: key, hash: hash, value: value, inUse: true}
 			// This store added one collision
 			if collisions > 0 {
 				h.collisions += 1
 			}
-			log.Printf("Added %v:%v, %d", key, value, index)
 			return true
 		} else {
 			// should be  a rare occasion
@@ -107,6 +107,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			index += 1
 		}
 	}
+	log.Printf("Faied to add %v:%v, col=%d:%d, index=%d hash=%d", key, value, collisions, h.collisions, index, hash)
 	return false
 }
 
@@ -139,7 +140,6 @@ func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 		h.statistics.LoadSuccess += 1
 		it := h.data[index]
 		value = it.value
-		log.Printf("Found %v:%v, %d", key, value, index)
 		return value, true
 	}
 	h.statistics.LoadFailed += 1
@@ -155,11 +155,14 @@ func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
 		}
 		// TODO I can move all colliding items left here and find a match
 		// faster next time.
-		it := h.data[index]
+
+		// I can save some races by paying a copy
+		// it := h.data[index]
+		// it.reset()
+		// h.data[index] = it
+		it := &h.data[index]
 		value = it.value
-		log.Printf("Removing %v:%v, %d", key, value, index)
 		it.reset()
-		h.data[index] = it
 		return value, true
 	}
 	h.statistics.RemoveFailed += 1
