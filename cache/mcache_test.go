@@ -3,7 +3,7 @@ package mcache
 import (
 	"fmt"
 	"hash/fnv"
-	"mcache/unsafepool"
+	"mcachego/unsafepool"
 	"reflect"
 	"sync/atomic"
 	"testing"
