@@ -3,6 +3,7 @@ package mcache
 import (
 	"fmt"
 	"hash/fnv"
+	"mcache/unsafepool"
 	"reflect"
 	"sync/atomic"
 	"testing"
@@ -80,7 +81,7 @@ type MyData struct {
 }
 
 func TestPoolAlloc(t *testing.T) {
-	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), 1)
+	pool := unsafepool.New(reflect.TypeOf(new(MyData)), 1)
 	if _, ok := pool.Alloc(); !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
 	}
@@ -90,7 +91,7 @@ func TestPoolAlloc(t *testing.T) {
 }
 
 func TestAddCustomType(t *testing.T) {
-	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), 1)
+	pool := unsafepool.New(reflect.TypeOf(new(MyData)), 1)
 	ptr, ok := pool.Alloc()
 	if !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
@@ -128,7 +129,7 @@ func TestAddCustomType(t *testing.T) {
 func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
 	cache := New(b.N, int64(TTL))
-	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), b.N)
+	pool := unsafepool.New(reflect.TypeOf(new(MyData)), b.N)
 	now := nanotime()
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
@@ -181,7 +182,7 @@ func BenchmarkHashFnv(b *testing.B) {
 func BenchmarkPoolAlloc(b *testing.B) {
 	b.ReportAllocs()
 	poolSize := 10 * 1000 * 1000
-	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), poolSize)
+	pool := unsafepool.New(reflect.TypeOf(new(MyData)), poolSize)
 	b.N = poolSize
 	b.ResetTimer()
 
@@ -225,7 +226,7 @@ func BenchmarkFifo(b *testing.B) {
 func BenchmarkPoolAllocFree(b *testing.B) {
 	b.ReportAllocs()
 	poolSize := 10 * 1000 * 1000
-	pool := NewUnsafePool(reflect.TypeOf(new(MyData)), poolSize)
+	pool := unsafepool.New(reflect.TypeOf(new(MyData)), poolSize)
 	b.N = poolSize
 	b.ResetTimer()
 

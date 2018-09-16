@@ -1,4 +1,4 @@
-package mcache
+package unsafepool
 
 import (
 	"reflect"
@@ -12,7 +12,7 @@ import (
 // Application needs a pool to allocate users objects
 // and keep the objects in the cache
 // This is a lock free memory pool of blocks of fixed size
-type UnsafePool struct {
+type Pool struct {
 	top         int32
 	stack       []unsafe.Pointer
 	data        []byte
@@ -22,9 +22,9 @@ type UnsafePool struct {
 	minAddr     uintptr
 }
 
-func NewUnsafePool(t reflect.Type, objectCount int) (p *UnsafePool) {
+func New(t reflect.Type, objectCount int) (p *Pool) {
 	objectSize := int(unsafe.Sizeof(t))
-	p = new(UnsafePool)
+	p = new(Pool)
 	p.objectSize, p.objectCount = objectSize, objectCount
 	p.data = make([]byte, objectSize*objectCount, objectSize*objectCount)
 	p.stack = make([]unsafe.Pointer, objectCount, objectCount)
@@ -35,22 +35,22 @@ func NewUnsafePool(t reflect.Type, objectCount int) (p *UnsafePool) {
 }
 
 // Maximum number of objects in the pool
-func (p *UnsafePool) Size() int {
+func (p *Pool) Size() int {
 	return p.objectCount
 }
 
 // Occupied memory
-func (p *UnsafePool) SizeBytes() int {
+func (p *Pool) SizeBytes() int {
 	var up unsafe.Pointer
 	return len(p.data) + int(unsafe.Sizeof(up))*len(p.stack)
 }
 
 // Number of objects available for allocation
-func (p *UnsafePool) Availability() int {
+func (p *Pool) Availability() int {
 	return int(p.top)
 }
 
-func (p *UnsafePool) Reset() {
+func (p *Pool) Reset() {
 	for i := 0; i < p.objectCount; i += 1 {
 		p.stack[i] = unsafe.Pointer(&p.data[i*p.objectSize])
 	}
@@ -58,7 +58,7 @@ func (p *UnsafePool) Reset() {
 }
 
 // Allocate a block from the pool
-func (p *UnsafePool) Alloc() (ptr unsafe.Pointer, ok bool) {
+func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	for p.top > 0 {
 		top := p.top
 		if atomic.CompareAndSwapInt32(&p.top, top, top-1) {
@@ -70,7 +70,7 @@ func (p *UnsafePool) Alloc() (ptr unsafe.Pointer, ok bool) {
 }
 
 // Return previously allocated block to the pool
-func (p *UnsafePool) Free(ptr unsafe.Pointer) bool {
+func (p *Pool) Free(ptr unsafe.Pointer) bool {
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
 		return false
 	}
