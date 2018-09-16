@@ -26,8 +26,8 @@ type Object uintptr
 // If I keep the item struct small I can avoid memory pools for items
 // I want a benchmark here: copy vs custom memory pool
 type item struct {
-	o            Object
 	expirationNs int64
+	o            Object
 }
 
 type itemFifo struct {
@@ -134,6 +134,9 @@ func (c *Cache) Reset() {
 func (c *Cache) Store(key Key, o Object, now int64) bool {
 	// Create an entry on the stack, copy 128 bits
 	// I can save an assignment here by using user prepared items
+	// The idea is to require using of the UnsafePool() and pad 64 bits
+	// expirationNs to the user structure
+	// This is very C/C++ style
 	c.data[key] = item{o: o, expirationNs: now + c.ttl}
 	ok := c.fifo.add(key)
 	return ok
