@@ -3,7 +3,7 @@ package mcache
 import (
 	"reflect"
 	"sync/atomic"
-	"unsafe" // I need this for runtime.nanotime()
+	"unsafe"
 )
 
 // I am replacing the whole Go  memory managemnt, It is safer (no pun)
