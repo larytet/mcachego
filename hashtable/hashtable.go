@@ -65,6 +65,14 @@ func New(size int, maxCollisions int) (h *Hashtable) {
 	return h
 }
 
+func (h *Hashtable) Reset() {
+	// GC will remove strings anyway. Better I will perform the loop
+	for _, v := range h.data {
+		v.inUse = false
+		v.key = ""
+	}
+}
+
 // Store a key:value pair in the hashtable
 func (h *Hashtable) Store(key string, value uintptr) bool {
 	h.statistics.Store += 1
