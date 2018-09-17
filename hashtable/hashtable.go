@@ -150,7 +150,6 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	index := hc.nextIndex()
 	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
-		// most expensive line in the code - likely a cache miss here
 		it := &h.data[index]
 		// The next line - random memory access - dominates CPU consumption
 		// for tables 100K entries and above
