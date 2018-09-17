@@ -93,6 +93,10 @@ func getNextIndex(size int, hash uint64, collisions int) int {
 // Store a key:value pair in the hashtable
 func (h *Hashtable) Store(key string, value uintptr) bool {
 	h.statistics.Store += 1
+
+	// Collision attack is possible here
+	// I should rotate hash functions
+	// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 	hash := xxhash.Sum64String(key)
 	if h.RelyOnHash {
 		key = ""
