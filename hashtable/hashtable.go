@@ -19,6 +19,7 @@ type Statistics struct {
 	Store          uint64
 	StoreSuccess   uint64
 	StoreCollision uint64
+	MaxCollisions  uint64
 	Load           uint64
 	LoadSuccess    uint64
 	LoadSwap       uint64
@@ -97,9 +98,6 @@ type hashContext struct {
 
 // This is naive. What I want to do here is sharding based on 8 LSBs
 // Bad choise of "size" will cause collisions
-// 10% of the performance. I want a switch/case here with dividing by const
-// and let the compiler optimize modulo
-// See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 func (hc *hashContext) nextIndex() (index int) {
 	if hc.step == 0 {
 		// Collision attack is possible here
@@ -108,6 +106,9 @@ func (hc *hashContext) nextIndex() (index int) {
 		hash := xxhash.Sum64String(hc.key)
 		hc.step += 1
 		hc.firstHash = hash
+		// 20% of the function is here. I want a switch/case with dividing by const
+		// and let the compiler optimize modulo
+		// See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 		hc.index = int(hash % uint64(hc.size))
 	} else {
 		// rehash the hash ?
@@ -141,6 +142,9 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			// This store added one collision
 			if collisions > 0 {
 				h.collisions += 1
+			}
+			if h.statistics.MaxCollisions < uint64(collisions) {
+				h.statistics.MaxCollisions = uint64(collisions)
 			}
 			return true
 		} else {
@@ -182,6 +186,7 @@ func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 		h.statistics.LoadSuccess += 1
 		it := h.data[index]
 		// Swap the found item with the first in the "chain" and improve lookup next time
+		// due to CPU caching
 		if collisions > 0 {
 			//log.Printf("Swap %v[%d] %v[%d]", h.data[index], index, h.data[chainStart], chainStart)
 			h.data[index] = h.data[chainStart]

@@ -62,7 +62,7 @@ func BenchmarkHashtableStore(b *testing.B) {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
-	b.Logf("Store collisions %d from %d", h.statistics.StoreCollision, h.statistics.Store)
+	b.Logf("Store collisions %d from %d, max collision chain %d", h.statistics.StoreCollision, h.statistics.Store, h.statistics.MaxCollisions)
 }
 
 func BenchmarkHashtableLoad(b *testing.B) {
