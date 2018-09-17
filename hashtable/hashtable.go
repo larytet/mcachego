@@ -40,17 +40,19 @@ type item struct {
 	// Can I copy the string to a large buffer and use an index in the buffer instead
 	// of the string address? What are alternatives?
 	// I can also rely on 64 bits (or 128 bits) hash and report collisions
-	// key string
+	key string
+
 	// 64 bits hash of the key for quick compare
 	hash  uint64
 	value uintptr
+
 	// I can "state int64" instead and atomic compareAndSwap to allocate the entry
 	inUse bool
 }
 
 func (i *item) reset() {
 	i.inUse = false
-	//i.key = ""
+	i.key = ""
 	i.hash = 0
 	i.value = 0
 }
@@ -145,7 +147,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 			h.statistics.StoreSuccess += 1
 			it.inUse = true
-			//it.key = key
+			it.key = key
 			it.hash = hc.firstHash
 			it.value = value
 			// This store added one collision
@@ -172,7 +174,7 @@ func (h *Hashtable) find(key string) (index int, collisions int, chainStart int,
 	chainStart = index
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
-		if it.inUse && (hc.firstHash == it.hash) { //&& (key == it.key)
+		if it.inUse && (hc.firstHash == it.hash) && (key == it.key) {
 			h.statistics.FindSuccess += 1
 			return index, collisions, chainStart, true
 		} else {
