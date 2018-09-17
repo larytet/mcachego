@@ -55,14 +55,12 @@ type item struct {
 	hash  uint64
 	value uintptr
 
-	// I can "state int64" instead and atomic compareAndSwap to allocate the entry
-	inUse bool
+	// I can add "state int64" and atomic compareAndSwap to lock the entry
 
 	// Add padding for 64 bytes cache line?
 }
 
 func (i *item) reset() {
-	i.inUse = false
 	i.key = ""
 	i.hash = 0
 	i.value = 0
@@ -73,7 +71,15 @@ func (i *item) reset() {
 // 'other' is an automatic variable
 // 'i' is a random address in the hashtable
 func (i *item) isSame(other *item) bool {
-	return i.inUse && other.inUse && (i.hash == other.hash) && (i.key == other.key)
+	return i.inUse() && other.inUse() &&
+		(i.hash == other.hash) &&
+		(i.key == other.key)
+}
+
+const ITEM_IN_USE_MASK = uint64(1 << 63)
+
+func (i *item) inUse() bool {
+	return (i.hash & ITEM_IN_USE_MASK) != 0
 }
 
 // This is copy&paste from https://github.com/larytet/emcpp/blob/master/src/HashTable.h
@@ -132,11 +138,10 @@ func (hc *hashContext) nextIndex() (index int) {
 		// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 		hash := xxhash.Sum64String(hc.it.key)
 		hc.step += 1
-		hc.it.hash = hash
+		hc.it.hash = hash | ITEM_IN_USE_MASK
 		// The modulo 'hash % hc.size' consumes 50% of the function if the table fits L3 cache
 		// and 20% of the function for large tables
 		hc.index = moduloSize(hash, hc.size)
-		hc.it.inUse = true
 	} else {
 		// rehash the hash ?
 		//bs := []byte{0, 0, 0, 0, 0, 0, 0, 0} // https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
@@ -159,12 +164,11 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 		// The next line - random memory access - dominates execution time
 		// for tables 100K entries and above
 		// Data cache miss (and memory page miss?) sucks
-		inUse := it.inUse
+		inUse := it.inUse()
 		if !inUse {
 			// I can swap the first item in the "chain" with this item and improve lookup time for freshly inserted items
 			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 			h.statistics.StoreSuccess += 1
-			it.inUse = true
 			it.key = key
 			it.hash = hc.it.hash
 			it.value = value
