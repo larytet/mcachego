@@ -87,10 +87,11 @@ func (h *Hashtable) Reset() {
 }
 
 type hashContext struct {
-	hash uint64
-	key  string
-	size int
-	step int
+	hash      uint64
+	firstHash uint64
+	key       string
+	size      int
+	step      int
 }
 
 // This is naive. What I want to do here is sharding based on 8 LSBs
@@ -98,12 +99,15 @@ type hashContext struct {
 // 10% of the performance. I want a switch/case here with dividing by const
 // and let the compiler optimize modulo
 // See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
-func (hc *hashContext) next() (hash uint64, index int) {
+func (hc *hashContext) nextIndex() (index int) {
+	var hash uint64
 	if hc.step == 0 {
 		// Collision attack is possible here
 		// I should rotate hash functions
 		// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 		hash = xxhash.Sum64String(hc.key)
+		hc.step += 1
+		hc.firstHash = hash
 	} else {
 		// rehash the hash
 		bs := []byte{0, 0, 0, 0, 0, 0, 0, 0} // https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
@@ -111,19 +115,17 @@ func (hc *hashContext) next() (hash uint64, index int) {
 		hash = xxhash.Sum64(bs)
 	}
 	hc.hash = hash
-	hc.step += 1
-	return hash, int(hash % uint64(hc.size))
+	return int(hash % uint64(hc.size))
 }
 
 // Store a key:value pair in the hashtable
 func (h *Hashtable) Store(key string, value uintptr) bool {
 	h.statistics.Store += 1
 
-	var collisions, index int
 	hc := hashContext{key: key, size: h.size}
-	var hash uint64
+	index := hc.nextIndex()
+	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
-		hash, index = hc.next()
 		// most expensive line in the code - likely a cache miss here
 		it := &h.data[index]
 		// The next line - first fetch - consumes lot of CPU cycles. Why?
@@ -133,7 +135,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			h.statistics.StoreSuccess += 1
 			it.inUse = true
 			//it.key = key
-			it.hash = hash
+			it.hash = hc.firstHash
 			it.value = value
 			// This store added one collision
 			if collisions > 0 {
@@ -143,35 +145,43 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 		} else {
 			// should be  a rare occasion
 			h.statistics.StoreCollision += 1
+			index = hc.nextIndex()
 		}
 	}
-	log.Printf("Failed to add %v:%v, col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hash, h.size)
+	log.Printf("Failed to add %v:%v, col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hc.hash, h.size)
 	return false
 }
 
-func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
+func (h *Hashtable) find(key string) (index int, ok bool, collisions int, chainStart int) {
 	hc := hashContext{key: key, size: h.size}
+	index = hc.nextIndex()
+	chainStart = index
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
-		hash, index := hc.next()
 		it := h.data[index]
-		if it.inUse && (hash == it.hash) { //&& (key == it.key)
+		if it.inUse && (hc.firstHash == it.hash) { //&& (key == it.key)
 			h.statistics.FindSuccess += 1
-			return index, true, collisions
+			return index, true, collisions, chainStart
 		} else {
 			// should be  a rare occasion
 			h.statistics.FindCollision += 1
+			index = hc.nextIndex()
 		}
 	}
 	h.statistics.FindFailed += 1
-	return 0, false, collisions
+	return 0, false, collisions, chainStart
 }
 
 func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 	h.statistics.Load += 1
-	if index, ok, _ := h.find(key); ok {
-		// I can place this key first in the "chain" and improve lookup next time
+	if index, ok, collisions, chainStart := h.find(key); ok {
 		h.statistics.LoadSuccess += 1
 		it := h.data[index]
+		// Swap the found item with the first in the "chain" and improve lookup next time
+		if collisions > 0 {
+			log.Printf("Swap %v[%d] %v[%d]", h.data[index], index, h.data[chainStart], chainStart)
+			h.data[index] = h.data[chainStart]
+			h.data[chainStart] = it
+		}
 		value = it.value
 		return value, true
 	}
@@ -181,7 +191,7 @@ func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 
 func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
-	if index, ok, collisions := h.find(key); ok {
+	if index, ok, collisions, _ := h.find(key); ok {
 		h.statistics.RemoveSuccess += 1
 		if collisions > 0 {
 			h.collisions -= 1
