@@ -1,7 +1,7 @@
 package hashtable
 
 import (
-	"encoding/binary"
+	//	"encoding/binary"
 	"github.com/cespare/xxhash"
 	"log"
 	"sync"
@@ -21,6 +21,7 @@ type Statistics struct {
 	StoreCollision uint64
 	Load           uint64
 	LoadSuccess    uint64
+	LoadSwap       uint64
 	LoadFailed     uint64
 	FindSuccess    uint64
 	FindCollision  uint64
@@ -87,7 +88,7 @@ func (h *Hashtable) Reset() {
 }
 
 type hashContext struct {
-	hash      uint64
+	index     int
 	firstHash uint64
 	key       string
 	size      int
@@ -100,22 +101,22 @@ type hashContext struct {
 // and let the compiler optimize modulo
 // See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 func (hc *hashContext) nextIndex() (index int) {
-	var hash uint64
 	if hc.step == 0 {
 		// Collision attack is possible here
 		// I should rotate hash functions
 		// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
-		hash = xxhash.Sum64String(hc.key)
+		hash := xxhash.Sum64String(hc.key)
 		hc.step += 1
 		hc.firstHash = hash
+		hc.index = int(hash % uint64(hc.size))
 	} else {
-		// rehash the hash
-		bs := []byte{0, 0, 0, 0, 0, 0, 0, 0} // https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
-		binary.LittleEndian.PutUint64(bs, hc.hash)
-		hash = xxhash.Sum64(bs)
+		// rehash the hash ?
+		//bs := []byte{0, 0, 0, 0, 0, 0, 0, 0} // https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
+		//binary.LittleEndian.PutUint64(bs, hc.hash)
+		//hash = xxhash.Sum64(bs)
+		hc.index += 1
 	}
-	hc.hash = hash
-	return int(hash % uint64(hc.size))
+	return hc.index
 }
 
 // Store a key:value pair in the hashtable
@@ -148,39 +149,44 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			index = hc.nextIndex()
 		}
 	}
-	log.Printf("Failed to add %v:%v, col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hc.hash, h.size)
+	log.Printf("Failed to add %v:%v, col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hc.firstHash, h.size)
 	return false
 }
 
-func (h *Hashtable) find(key string) (index int, ok bool, collisions int, chainStart int) {
+func (h *Hashtable) find(key string) (index int, collisions int, chainStart int, ok bool) {
 	hc := hashContext{key: key, size: h.size}
 	index = hc.nextIndex()
+	//log.Printf("Find hash %d", hc.firstHash)
 	chainStart = index
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := h.data[index]
+		//log.Printf("Find firstHash %d, act %d", hc.firstHash, it.hash)
 		if it.inUse && (hc.firstHash == it.hash) { //&& (key == it.key)
 			h.statistics.FindSuccess += 1
-			return index, true, collisions, chainStart
+			//log.Printf("%v", h.data)
+			return index, collisions, chainStart, true
 		} else {
 			// should be  a rare occasion
 			h.statistics.FindCollision += 1
 			index = hc.nextIndex()
 		}
 	}
+	//log.Printf("%v", h.data)
 	h.statistics.FindFailed += 1
-	return 0, false, collisions, chainStart
+	return 0, collisions, chainStart, false
 }
 
 func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 	h.statistics.Load += 1
-	if index, ok, collisions, chainStart := h.find(key); ok {
+	if index, collisions, chainStart, ok := h.find(key); ok {
 		h.statistics.LoadSuccess += 1
 		it := h.data[index]
 		// Swap the found item with the first in the "chain" and improve lookup next time
 		if collisions > 0 {
-			log.Printf("Swap %v[%d] %v[%d]", h.data[index], index, h.data[chainStart], chainStart)
+			//log.Printf("Swap %v[%d] %v[%d]", h.data[index], index, h.data[chainStart], chainStart)
 			h.data[index] = h.data[chainStart]
 			h.data[chainStart] = it
+			h.statistics.LoadSwap += 1
 		}
 		value = it.value
 		return value, true
@@ -191,7 +197,7 @@ func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 
 func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
-	if index, ok, collisions, _ := h.find(key); ok {
+	if index, collisions, _, ok := h.find(key); ok {
 		h.statistics.RemoveSuccess += 1
 		if collisions > 0 {
 			h.collisions -= 1
