@@ -101,6 +101,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	// Bad choise of "size" will cause collisions
 	// 10% of the performance. I want a switch/case here with dividing by const
 	// and let the compiler optimize modulo
+	// See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 	index := int(hash % uint64(h.size))
 	collisions := 0
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
