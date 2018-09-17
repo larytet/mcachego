@@ -83,6 +83,8 @@ func New(size int, maxCollisions int) (h *Hashtable) {
 
 func (h *Hashtable) Reset() {
 	// GC will remove strings anyway. Better I will perform the loop
+	// I want to touch all entries after New(). If the table is small
+	// it will fit L3 data cache and first store will be fast
 	for i := 0; i < len(h.data); i++ {
 		h.data[i].reset()
 	}
@@ -130,7 +132,8 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		// most expensive line in the code - likely a cache miss here
 		it := &h.data[index]
-		// The next line - first fetch - consumes lot of CPU cycles. Why?
+		// The next line - first fetch - consumes lot of CPU cycles.
+		// Data cache miss (and memory page miss?) sucks
 		if !it.inUse {
 			// I can swap the first item in the "chain" with this item and improve lookup time for freshly inserted items
 			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
