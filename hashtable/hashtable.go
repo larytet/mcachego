@@ -40,6 +40,7 @@ type item struct {
 	// Can I copy the string to a large buffer and use an index in the buffer instead
 	// of the string address? What are alternatives?
 	// I can also rely on 64 bits (or 128 bits) hash and report collisions
+	// I can keep two keys (a bucket) in the same item which will reduce data cache miss
 	key string
 
 	// 64 bits hash of the key for quick compare
@@ -48,6 +49,8 @@ type item struct {
 
 	// I can "state int64" instead and atomic compareAndSwap to allocate the entry
 	inUse bool
+
+	// Add padding for 64 bytes cache line?
 }
 
 func (i *item) reset() {
