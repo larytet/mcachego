@@ -163,12 +163,12 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			it.key = key
 			it.hash = hc.it.hash
 			it.value = value
-			// This store added one collision
 			if collisions > 0 {
+				if h.statistics.MaxCollisions < uint64(collisions) {
+					h.statistics.MaxCollisions = uint64(collisions)
+				}
+				// This store added one collision
 				h.collisions += 1
-			}
-			if h.statistics.MaxCollisions < uint64(collisions) {
-				h.statistics.MaxCollisions = uint64(collisions)
 			}
 			return true
 		} else {
