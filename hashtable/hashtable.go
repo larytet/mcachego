@@ -1,8 +1,10 @@
 package hashtable
 
 import (
+	"encoding/binary"
 	"github.com/cespare/xxhash"
 	"log"
+	"math/bits"
 	"sync"
 )
 
@@ -85,9 +87,20 @@ func (h *Hashtable) Reset() {
 	}
 }
 
-// Rehashing
-func getNextIndex(size int, hash uint64, collisions int) int {
-	return int((hash >> uint64(collisions+1)) % uint64(size))
+// This is naive. What I want to do here is sharding based on 8 LSBs
+// Bad choise of "size" will cause collisions
+// 10% of the performance. I want a switch/case here with dividing by const
+// and let the compiler optimize modulo
+// See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
+func getNextIndex(size int, hash uint64, step int) int {
+	if step == 0 {
+		return int(hash % uint64(size))
+	}
+	// rehash the hash
+	var bs [8]byte
+	// https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
+	binary.LittleEndian.PutUint64(bs, hash)
+	return int(bits.RotateLeft64(hash, step) % uint64(size))
 }
 
 // Store a key:value pair in the hashtable
@@ -98,17 +111,10 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	// I should rotate hash functions
 	// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 	hash := xxhash.Sum64String(key)
-	if h.RelyOnHash {
-		key = ""
-	}
-	// This is naive. What I want to do here is sharding based on 8 LSBs
-	// Bad choise of "size" will cause collisions
-	// 10% of the performance. I want a switch/case here with dividing by const
-	// and let the compiler optimize modulo
-	// See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
-	index := int(hash % uint64(h.size))
-	collisions := 0
-	for collisions := 0; collisions < h.maxCollisions; collisions++ {
+	var collisions int
+	for collisions = 0; collisions < h.maxCollisions; collisions++ {
+		index := getNextIndex(h.size, hash, collisions)
+		log.Printf("index=%d, collisions=%d, r=%x", index, collisions, bits.RotateLeft64(hash, collisions))
 		// most expensive line in the code - likely a cache miss here
 		it := &h.data[index]
 		// The next line - first fetch - consumes lot of CPU cycles. Why?
@@ -128,21 +134,16 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 		} else {
 			// should be  a rare occasion
 			h.statistics.StoreCollision += 1
-			index = getNextIndex(h.size, hash, collisions+1)
 		}
 	}
-	log.Printf("Faied to add %v:%v, col=%d:%d, index=%d hash=%x", key, value, collisions, h.collisions, index, hash)
+	log.Printf("Falied to add %v:%v, col=%d:%d, index=%d hash=%x size=%d", key, value, collisions, h.collisions, getNextIndex(h.size, hash, collisions), hash, h.size)
 	return false
 }
 
 func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 	hash := xxhash.Sum64String(key)
-	if h.RelyOnHash {
-		key = ""
-	}
-	index = int(hash % uint64(h.size))
-	collisions = 0
-	for collisions := 0; collisions < h.maxCollisions; collisions++ {
+	for collisions = 0; collisions < h.maxCollisions; collisions++ {
+		index := getNextIndex(h.size, hash, collisions)
 		it := h.data[index]
 		if it.inUse && (hash == it.hash) { //&& (key == it.key)
 			h.statistics.FindSuccess += 1
@@ -150,7 +151,6 @@ func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 		} else {
 			// should be  a rare occasion
 			h.statistics.FindCollision += 1
-			index = getNextIndex(h.size, hash, collisions+1)
 		}
 	}
 	h.statistics.FindFailed += 1
