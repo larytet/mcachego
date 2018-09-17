@@ -97,7 +97,6 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	// Collision attack is possible here
 	// I should rotate hash functions
 	// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
-	// https://en.wikipedia.org/wiki/Hash_table#Robin_Hood_hashing
 	hash := xxhash.Sum64String(key)
 	if h.RelyOnHash {
 		key = ""
@@ -114,6 +113,8 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 		it := &h.data[index]
 		// The next line - first fetch - consumes lot of CPU cycles. Why?
 		if !it.inUse {
+			// I can swap the first item in the "chain" with this item and improve lookup time for freshly inserted items
+			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 			h.statistics.StoreSuccess += 1
 			it.inUse = true
 			//it.key = key
@@ -159,6 +160,7 @@ func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 	h.statistics.Load += 1
 	if index, ok, _ := h.find(key); ok {
+		// I can place this key first in the "chain" and improve lookup next time
 		h.statistics.LoadSuccess += 1
 		it := h.data[index]
 		value = it.value
