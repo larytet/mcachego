@@ -2,6 +2,7 @@ package hashtable
 
 import (
 	"fmt"
+	"mcachego/xorshift64star"
 	"testing"
 )
 
@@ -107,4 +108,25 @@ func BenchmarkMapStore(b *testing.B) {
 		key := keys[i]
 		m[key] = uintptr(i)
 	}
+}
+
+func BenchmarkRandomMemoryAccess(b *testing.B) {
+	array := make([]item, b.N, b.N)
+	prng := xorshift64star.New(1)
+	for i := 0; i < b.N; i++ {
+		hash := prng.Next()
+		idx := int(hash % uint64(b.N))
+		array[idx] = item{hash: hash, inUse: true, value: uintptr(i)}
+	}
+	var inUseCount = 0
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		hash := prng.Next()
+		idx := int(hash % uint64(b.N))
+		it := &array[idx]
+		if it.inUse {
+			inUseCount += 1
+		}
+	}
+	b.Logf("InUse %d", inUseCount)
 }
