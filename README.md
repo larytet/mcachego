@@ -55,3 +55,5 @@ See TestAddCustomType() for usage.
 * https://dave.cheney.net/2018/05/29/how-the-go-runtime-implements-maps-efficiently-without-generics
 * https://medium.com/@ConnorPeet/go-maps-are-not-o-1-91c1e61110bf
 * https://dzone.com/articles/so-you-wanna-go-fast
+* https://www.youtube.com/watch?time_continue=2&v=ncHmEUmJZf4
+* https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/

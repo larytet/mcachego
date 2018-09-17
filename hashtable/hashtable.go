@@ -99,6 +99,8 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	}
 	// This is naive. What I want to do here is sharding based on 8 LSBs
 	// Bad choise of "size" will cause collisions
+	// 10% of the performance. I want a switch/case here with dividing by const
+	// and let the compiler optimize modulo
 	index := int(hash % uint64(h.size))
 	collisions := 0
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
