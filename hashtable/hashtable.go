@@ -41,6 +41,8 @@ type Statistics struct {
 	RemoveFailed     uint64
 }
 
+const ITEM_IN_USE_MASK = uint64(1 << 63)
+
 // An item in the hashtable. I want this struct to be as small as possible
 // to reduce data cache miss.
 // Alternatively I can keep two keys (a bucket) in the same item
@@ -52,10 +54,10 @@ type item struct {
 	key string
 
 	// 64 bits hash of the key for quick compare
+	// I can set the IN_USE bit with atomic.compareAndSwap() and lock the entry
+	// I will need two bits LOCK and READY to avoid read of partial data
 	hash  uint64
 	value uintptr
-
-	// I can add "state int64" and atomic compareAndSwap to lock the entry
 
 	// Add padding for 64 bytes cache line?
 }
@@ -75,8 +77,6 @@ func (i *item) isSame(other *item) bool {
 		(i.hash == other.hash) &&
 		(i.key == other.key)
 }
-
-const ITEM_IN_USE_MASK = uint64(1 << 63)
 
 func (i *item) inUse() bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
