@@ -36,7 +36,7 @@ func TestRemove(t *testing.T) {
 	smallCache.Reset()
 	start := nanotime()
 	smallCache.Store("0", 0, start)
-	_, evicted, nextExpiration := smallCache.Evict(start)
+	_, evicted, nextExpiration := smallCache.Evict(start, false)
 	if evicted {
 		t.Fatalf("Evicted entry before it expired")
 	}
@@ -45,7 +45,7 @@ func TestRemove(t *testing.T) {
 		t.Fatalf("Expected %d, got %d", expectedNextExpiration, nextExpiration)
 	}
 	time.Sleep(time.Second)
-	_, evicted, nextExpiration = smallCache.Evict(Nanotime())
+	_, evicted, nextExpiration = smallCache.Evict(Nanotime(), false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
@@ -57,7 +57,7 @@ func TestRemove(t *testing.T) {
 		t.Fatalf("Failed to remove value from the cache")
 	}
 
-	_, evicted, nextExpiration = smallCache.Evict(Nanotime())
+	_, evicted, nextExpiration = smallCache.Evict(Nanotime(), false)
 	if evicted {
 		t.Fatalf("Evicted from empty cache")
 	}
@@ -95,7 +95,7 @@ func TestAddCustomType(t *testing.T) {
 
 	smallCache.Store("0", Object(ptr), Nanotime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
-	o, evicted, nextExpiration := smallCache.Evict(Nanotime())
+	o, evicted, nextExpiration := smallCache.Evict(Nanotime(), false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
@@ -148,7 +148,7 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	}
 	now += 1000*1000*TTL + 1
 	for i := 0; i < b.N; i++ {
-		p, expired, _ := cache.Evict(now)
+		p, expired, _ := cache.Evict(now, false)
 		if !expired {
 			b.Fatalf("Failed to evict %v", i)
 		}

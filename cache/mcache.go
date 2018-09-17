@@ -103,6 +103,7 @@ func Nanotime() int64 {
 type Statistics struct {
 	EvictCalled       uint64
 	EvictExpired      uint64
+	EvictForce        uint64
 	EvictNotExpired   uint64
 	EvictLookupFailed uint64
 	EvictPeekFailed   uint64
@@ -188,6 +189,7 @@ func (c *Cache) StoreSync(key Key, o Object) bool {
 	return ok
 }
 
+// Lookup in the cache
 func (c *Cache) Load(key Key) (o Object, ok bool) {
 	i, ok := c.data[key]
 	return i.o, ok
@@ -200,22 +202,29 @@ func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
 	return o, ok
 }
 
-func (c *Cache) evict(now int64) (o Object, expired bool) {
+func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
 	c.statistics.EvictCalled += 1
 	if key, ok := c.fifo.peek(); ok {
 		if i, ok := c.data[key]; ok {
-			if (i.expirationNs - now) < 0 {
+			expired := ((i.expirationNs - now) < 0)
+			if expired || force {
+				c.statistics.EvictExpired += 1
+				if !expired {
+					c.statistics.EvictForce += 1
+				}
 				c.fifo.remove()
 				delete(c.data, key)
-				c.statistics.EvictExpired += 1
 				return i.o, true
 			} else {
 				c.statistics.EvictNotExpired += 1
 			}
 		} else {
+			// This is bad - entry is in the eviction FIFO, but not in the map
+			// memory leak?
 			c.statistics.EvictLookupFailed += 1
 		}
 	} else {
+		// Probably expiration FIFO is empty - nothing to do
 		c.statistics.EvictPeekFailed += 1
 	}
 	return 0, false
@@ -225,9 +234,11 @@ func (c *Cache) GetStatistics() Statistics {
 	return *c.statistics
 }
 
-func (c *Cache) Evict(now int64) (o Object, expired bool, nextExpirationNs int64) {
+// Evict an expired - added before time "now" ms - entry
+// If "force" is true evict the entry even if not expired yet entry
+func (c *Cache) Evict(now int64, force bool) (o Object, expired bool, nextExpirationNs int64) {
 	nextExpirationNs = 0
-	o, expired = c.evict(now)
+	o, expired = c.evict(now, force)
 	key, ok := c.fifo.peek()
 	if ok {
 		i := c.data[key]
@@ -236,9 +247,9 @@ func (c *Cache) Evict(now int64) (o Object, expired bool, nextExpirationNs int64
 	return o, expired, nextExpirationNs
 }
 
-func (c *Cache) EvictSync(now int64) (o Object, expired bool, nextExpirationNs int64) {
+func (c *Cache) EvictSync(now int64, force bool) (o Object, expired bool, nextExpirationNs int64) {
 	c.mutex.Lock()
-	o, expired, nextExpirationNs = c.Evict(now)
+	o, expired, nextExpirationNs = c.Evict(now, force)
 	c.mutex.Unlock()
 	return o, expired, nextExpirationNs
 }

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"mcachego/xorshift64star"
 	"testing"
+	"unsafe"
 )
 
 func TestHashtable(t *testing.T) {
+	t.Logf("Size of hashtable item %d", unsafe.Sizeof(*new(item)))
 	size := 10
 	h := New(2*size, 4)
 	for i := 0; i < size; i++ {
