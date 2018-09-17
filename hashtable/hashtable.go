@@ -154,7 +154,8 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 		// The next line - random memory access - dominates CPU consumption
 		// for tables 100K entries and above
 		// Data cache miss (and memory page miss?) sucks
-		if !it.inUse {
+		inUse := it.inUse
+		if !inUse {
 			// I can swap the first item in the "chain" with this item and improve lookup time for freshly inserted items
 			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 			h.statistics.StoreSuccess += 1
