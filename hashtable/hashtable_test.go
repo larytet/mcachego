@@ -51,7 +51,7 @@ func TestHashtable(t *testing.T) {
 // So far 150ns per Store() for large tables
 func BenchmarkHashtableStore(b *testing.B) {
 	b.ReportAllocs()
-	b.N = 100 * 1000
+	//b.N = 100 * 1000
 	h := New(2*b.N, 64)
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
@@ -64,12 +64,13 @@ func BenchmarkHashtableStore(b *testing.B) {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
+	b.StopTimer()
 	b.Logf("Store collisions %d from %d, max collision chain %d", h.statistics.StoreCollision, h.statistics.Store, h.statistics.MaxCollisions)
 }
 
 func BenchmarkHashtableLoad(b *testing.B) {
 	b.ReportAllocs()
-	b.N = 100 * 1000
+	//b.N = 100 * 1000
 	h := New(2*b.N, 64)
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
@@ -97,7 +98,7 @@ func BenchmarkHashtableLoad(b *testing.B) {
 // Run the same test with the Go map API for comparison
 func BenchmarkMapStore(b *testing.B) {
 	b.ReportAllocs()
-	b.N = 100 * 1000
+	//b.N = 100 * 1000
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
@@ -111,22 +112,25 @@ func BenchmarkMapStore(b *testing.B) {
 }
 
 func BenchmarkRandomMemoryAccess(b *testing.B) {
-	array := make([]item, b.N, b.N)
+	array := make([]int, b.N, b.N)
 	prng := xorshift64star.New(1)
 	for i := 0; i < b.N; i++ {
 		hash := prng.Next()
 		idx := int(hash % uint64(b.N))
-		array[idx] = item{hash: hash, inUse: true, value: uintptr(i)}
+		array[idx] = 1
 	}
+
 	var inUseCount = 0
+	prng = xorshift64star.New(1)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		hash := prng.Next()
 		idx := int(hash % uint64(b.N))
-		it := &array[idx]
-		if it.inUse {
+		it := array[idx]
+		if it != 0 {
 			inUseCount += 1
 		}
 	}
+	b.StopTimer()
 	b.Logf("InUse %d", inUseCount)
 }
