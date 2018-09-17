@@ -108,7 +108,8 @@ func (hc *hashContext) nextIndex() (index int) {
 		hash := xxhash.Sum64String(hc.key)
 		hc.step += 1
 		hc.firstHash = hash
-		// 20% of the function is here. I want a switch/case with dividing by const
+		// The modulo below consumes 50% of the function if the table fits L3 cache
+		// 20% of the function for large tables. I want a switch/case with dividing by const
 		// and let the compiler optimize modulo
 		// See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 		hc.index = int(hash % uint64(hc.size))
@@ -132,7 +133,8 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		// most expensive line in the code - likely a cache miss here
 		it := &h.data[index]
-		// The next line - first fetch - consumes lot of CPU cycles.
+		// The next line - random memory access - dominates CPU consumption
+		// for tables 100K entries and above
 		// Data cache miss (and memory page miss?) sucks
 		if !it.inUse {
 			// I can swap the first item in the "chain" with this item and improve lookup time for freshly inserted items
