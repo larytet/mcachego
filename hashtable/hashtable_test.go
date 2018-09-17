@@ -47,7 +47,7 @@ func TestHashtable(t *testing.T) {
 	}
 }
 
-// So far 100ns per Store()
+// So far 150ns per Store() for large tables
 func BenchmarkHashtableStore(b *testing.B) {
 	b.ReportAllocs()
 	b.N = 100 * 1000
@@ -90,5 +90,21 @@ func BenchmarkHashtableLoad(b *testing.B) {
 		if v != uintptr(i) {
 			b.Fatalf("Got %v instead of %v from the hashtable", v, i)
 		}
+	}
+}
+
+// Run the same test with the Go map API for comparison
+func BenchmarkMapStore(b *testing.B) {
+	b.ReportAllocs()
+	b.N = 100 * 1000
+	keys := make([]string, b.N, b.N)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("%d", b.N-i)
+	}
+	m := make(map[string]uintptr, b.N)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := keys[i]
+		m[key] = uintptr(i)
 	}
 }
