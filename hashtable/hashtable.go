@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"github.com/cespare/xxhash"
 	"log"
-	"math/bits"
 	"sync"
 )
 
@@ -94,13 +93,13 @@ func (h *Hashtable) Reset() {
 // See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 func getNextIndex(size int, hash uint64, step int) int {
 	if step == 0 {
-		return int(hash % uint64(size))
+	} else {
+		// rehash the hash
+		bs := []byte{0, 0, 0, 0, 0, 0, 0, 0} // https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
+		binary.LittleEndian.PutUint64(bs, hash)
+		hash = xxhash.Sum64(bs)
 	}
-	// rehash the hash
-	var bs [8]byte
-	// https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
-	binary.LittleEndian.PutUint64(bs, hash)
-	return int(bits.RotateLeft64(hash, step) % uint64(size))
+	return int(hash % uint64(size))
 }
 
 // Store a key:value pair in the hashtable
@@ -114,7 +113,6 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		index := getNextIndex(h.size, hash, collisions)
-		log.Printf("index=%d, collisions=%d, r=%x", index, collisions, bits.RotateLeft64(hash, collisions))
 		// most expensive line in the code - likely a cache miss here
 		it := &h.data[index]
 		// The next line - first fetch - consumes lot of CPU cycles. Why?
@@ -136,7 +134,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			h.statistics.StoreCollision += 1
 		}
 	}
-	log.Printf("Falied to add %v:%v, col=%d:%d, index=%d hash=%x size=%d", key, value, collisions, h.collisions, getNextIndex(h.size, hash, collisions), hash, h.size)
+	log.Printf("Failed to add %v:%v, col=%d:%d, index=%d hash=%x size=%d", key, value, collisions, h.collisions, getNextIndex(h.size, hash, collisions), hash, h.size)
 	return false
 }
 
