@@ -16,6 +16,10 @@ func TestHashtable(t *testing.T) {
 			t.Fatalf("Failed to store value %v in the hashtable", i)
 		}
 	}
+	ok := h.Store("0", uintptr(0))
+	if ok {
+		t.Fatalf("Added same key to the hashtable")
+	}
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
 		v, ok := h.Load(key)

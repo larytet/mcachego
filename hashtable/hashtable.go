@@ -24,20 +24,21 @@ import (
 // distribution of character pairs
 
 type Statistics struct {
-	Store          uint64
-	StoreSuccess   uint64
-	StoreCollision uint64
-	MaxCollisions  uint64
-	Load           uint64
-	LoadSuccess    uint64
-	LoadSwap       uint64
-	LoadFailed     uint64
-	FindSuccess    uint64
-	FindCollision  uint64
-	FindFailed     uint64
-	Remove         uint64
-	RemoveSuccess  uint64
-	RemoveFailed   uint64
+	Store            uint64
+	StoreSuccess     uint64
+	StoreCollision   uint64
+	StoreMatchingKey uint64
+	MaxCollisions    uint64
+	Load             uint64
+	LoadSuccess      uint64
+	LoadSwap         uint64
+	LoadFailed       uint64
+	FindSuccess      uint64
+	FindCollision    uint64
+	FindFailed       uint64
+	Remove           uint64
+	RemoveSuccess    uint64
+	RemoveFailed     uint64
 }
 
 type item struct {
@@ -63,6 +64,10 @@ func (i *item) reset() {
 	i.key = ""
 	i.hash = 0
 	i.value = 0
+}
+
+func (i *item) isSame(other *item) bool {
+	return i.inUse && other.inUse && (i.hash == other.hash) && (i.key == other.key)
 }
 
 // This is copy&paste from https://github.com/larytet/emcpp/blob/master/src/HashTable.h
@@ -105,11 +110,10 @@ func (h *Hashtable) Reset() {
 }
 
 type hashContext struct {
-	index     int
-	firstHash uint64
-	key       string
-	size      int
-	step      int
+	it    item
+	index int
+	size  int
+	step  int
 }
 
 // This is naive. What I want to do here is sharding based on 8 LSBs
@@ -119,14 +123,15 @@ func (hc *hashContext) nextIndex() (index int) {
 		// Collision attack is possible here
 		// I should rotate hash functions
 		// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
-		hash := xxhash.Sum64String(hc.key)
+		hash := xxhash.Sum64String(hc.it.key)
 		hc.step += 1
-		hc.firstHash = hash
+		hc.it.hash = hash
 		// The modulo below consumes 50% of the function if the table fits L3 cache
 		// 20% of the function for large tables. I want a switch/case with dividing by const
 		// and let the compiler optimize modulo
 		// See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 		hc.index = int(hash % uint64(hc.size))
+		hc.it.inUse = true
 	} else {
 		// rehash the hash ?
 		//bs := []byte{0, 0, 0, 0, 0, 0, 0, 0} // https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
@@ -141,7 +146,7 @@ func (hc *hashContext) nextIndex() (index int) {
 func (h *Hashtable) Store(key string, value uintptr) bool {
 	h.statistics.Store += 1
 
-	hc := hashContext{key: key, size: h.size}
+	hc := hashContext{it: item{key: key}, size: h.size}
 	index := hc.nextIndex()
 	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
@@ -156,7 +161,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			h.statistics.StoreSuccess += 1
 			it.inUse = true
 			it.key = key
-			it.hash = hc.firstHash
+			it.hash = hc.it.hash
 			it.value = value
 			// This store added one collision
 			if collisions > 0 {
@@ -167,22 +172,26 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			}
 			return true
 		} else {
-			// should be  a rare occasion
+			// should be a rare occasion
+			if it.isSame(&hc.it) {
+				h.statistics.StoreMatchingKey += 1
+				return false
+			}
 			h.statistics.StoreCollision += 1
 			index = hc.nextIndex()
 		}
 	}
-	log.Printf("Failed to add %v:%v, col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hc.firstHash, h.size)
+	log.Printf("Failed to add %v:%v, col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hc.it.hash, h.size)
 	return false
 }
 
 func (h *Hashtable) find(key string) (index int, collisions int, chainStart int, ok bool) {
-	hc := hashContext{key: key, size: h.size}
+	hc := hashContext{it: item{key: key}, size: h.size}
 	index = hc.nextIndex()
 	chainStart = index
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
-		if it.inUse && (hc.firstHash == it.hash) && (key == it.key) {
+		if it.isSame(&hc.it) {
 			h.statistics.FindSuccess += 1
 			return index, collisions, chainStart, true
 		} else {
