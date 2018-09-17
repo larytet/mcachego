@@ -97,6 +97,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	// Collision attack is possible here
 	// I should rotate hash functions
 	// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
+	// https://en.wikipedia.org/wiki/Hash_table#Robin_Hood_hashing
 	hash := xxhash.Sum64String(key)
 	if h.RelyOnHash {
 		key = ""
