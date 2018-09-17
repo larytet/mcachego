@@ -41,12 +41,14 @@ type Statistics struct {
 	RemoveFailed     uint64
 }
 
+// An item in the hashtable. I want this struct to be as small as possible
+// to reduce data cache miss.
+// Alternatively I can keep two keys (a bucket) in the same item
 type item struct {
 	// I keep pointers to strings. This is bad for GC - triggers runtime.scanobject()
 	// Can I copy the string to a large buffer and use an index in the buffer instead
 	// of the string address? What are alternatives?
 	// I can also rely on 64 bits (or 128 bits) hash and report collisions
-	// I can keep two keys (a bucket) in the same item which will reduce data cache miss
 	key string
 
 	// 64 bits hash of the key for quick compare
