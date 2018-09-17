@@ -66,6 +66,10 @@ func (i *item) reset() {
 	i.value = 0
 }
 
+// This is by far the most expensive single line in the Load() flow
+// The line is responsible for 80% of the execution time
+// 'other' is an automatic variable
+// 'i' is a random address in the hashtable
 func (i *item) isSame(other *item) bool {
 	return i.inUse && other.inUse && (i.hash == other.hash) && (i.key == other.key)
 }
@@ -150,7 +154,7 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
-		// The next line - random memory access - dominates CPU consumption
+		// The next line - random memory access - dominates execution time
 		// for tables 100K entries and above
 		// Data cache miss (and memory page miss?) sucks
 		inUse := it.inUse
