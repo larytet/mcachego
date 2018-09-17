@@ -10,7 +10,7 @@ import (
 // An alternative for Go runtime implemenation of map[string]uintptr
 // Requires to specify maximum number of hash collisions at the initialization time
 // Insert can fail if there are too many collisions
-// The goal is 3x improvement and true O(1) performance (what about cache miss?)
+// The goal is 3x improvement and true O(1) performance (what about data cache miss?)
 // See also:
 // * https://medium.com/@ConnorPeet/go-maps-are-not-o-1-91c1e61110bf
 // * https://github.com/larytet/emcpp/blob/master/src/HashTable.h
@@ -168,7 +168,7 @@ func (h *Hashtable) find(key string) (index int, collisions int, chainStart int,
 	index = hc.nextIndex()
 	chainStart = index
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
-		it := h.data[index]
+		it := &h.data[index]
 		if it.inUse && (hc.firstHash == it.hash) { //&& (key == it.key)
 			h.statistics.FindSuccess += 1
 			return index, collisions, chainStart, true
