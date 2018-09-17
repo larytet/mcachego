@@ -127,9 +127,8 @@ func (hc *hashContext) nextIndex() (index int) {
 		hash := xxhash.Sum64String(hc.it.key)
 		hc.step += 1
 		hc.it.hash = hash
-		// The modulo below consumes 50% of the function if the table fits L3 cache
-		// 20% of the function for large tables.
-		// hc.index = int(hash % uint64(hc.size))
+		// The modulo 'hash % hc.size' consumes 50% of the function if the table fits L3 cache
+		// and 20% of the function for large tables
 		hc.index = moduloSize(hash, hc.size)
 		hc.it.inUse = true
 	} else {
@@ -274,6 +273,7 @@ func getPower2(N int) int {
 }
 
 // I want a switch/case and division by const and let the compiler optimize modulo
+// by generating the best assembler it can
 // See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 // and source code https://github.com/skarupke/flat_hash_map/blob/master/flat_hash_map.hpp
 // This function shaves 10% off the Store() CPU consumption
