@@ -17,6 +17,9 @@ import (
 
 // So far the performance is similar to the Go built-in map
 // For large tables - 100K+ items - random memory access dominates the performance
+// The idea is probably a dead end unless I introduce more constraints on the key distribution
+// My key is a domain name. There is not much special about domain names. A domain name is a UTF-8
+// string which can be rather long (~100 bytes), but usually (95%) is short (under 35 bytes)
 
 type Statistics struct {
 	Store          uint64
