@@ -91,7 +91,7 @@ func (h *Hashtable) Reset() {
 // 10% of the performance. I want a switch/case here with dividing by const
 // and let the compiler optimize modulo
 // See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
-func getNextIndex(size int, hash uint64, step int) int {
+func getNextIndex(size int, hash uint64, step int) (int, uint64) {
 	if step == 0 {
 	} else {
 		// rehash the hash
@@ -99,7 +99,7 @@ func getNextIndex(size int, hash uint64, step int) int {
 		binary.LittleEndian.PutUint64(bs, hash)
 		hash = xxhash.Sum64(bs)
 	}
-	return int(hash % uint64(size))
+	return int(hash % uint64(size)), hash
 }
 
 // Store a key:value pair in the hashtable
@@ -110,9 +110,9 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	// I should rotate hash functions
 	// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 	hash := xxhash.Sum64String(key)
-	var collisions int
+	var collisions, index int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
-		index := getNextIndex(h.size, hash, collisions)
+		index, hash = getNextIndex(h.size, hash, collisions)
 		// most expensive line in the code - likely a cache miss here
 		it := &h.data[index]
 		// The next line - first fetch - consumes lot of CPU cycles. Why?
@@ -134,14 +134,14 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 			h.statistics.StoreCollision += 1
 		}
 	}
-	log.Printf("Failed to add %v:%v, col=%d:%d, index=%d hash=%x size=%d", key, value, collisions, h.collisions, getNextIndex(h.size, hash, collisions), hash, h.size)
+	log.Printf("Failed to add %v:%v, col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hash, h.size)
 	return false
 }
 
 func (h *Hashtable) find(key string) (index int, ok bool, collisions int) {
 	hash := xxhash.Sum64String(key)
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
-		index := getNextIndex(h.size, hash, collisions)
+		index, hash = getNextIndex(h.size, hash, collisions)
 		it := h.data[index]
 		if it.inUse && (hash == it.hash) { //&& (key == it.key)
 			h.statistics.FindSuccess += 1

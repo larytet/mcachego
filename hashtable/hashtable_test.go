@@ -7,7 +7,7 @@ import (
 
 func TestHashtable(t *testing.T) {
 	size := 10
-	h := New(2*size, 2)
+	h := New(2*size, 4)
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
 		ok := h.Store(key, uintptr(i))
