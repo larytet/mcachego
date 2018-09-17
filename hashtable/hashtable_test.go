@@ -126,6 +126,7 @@ func BenchmarkRandomMemoryAccess(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		hash := prng.Next()
 		idx := int(hash % uint64(b.N))
+		// This line is responsible for 85% of the execution time
 		it := array[idx]
 		if it != 0 {
 			inUseCount += 1
