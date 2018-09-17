@@ -85,6 +85,7 @@ func (h *Hashtable) Reset() {
 	// GC will remove strings anyway. Better I will perform the loop
 	// I want to touch all entries after New(). If the table is small
 	// it will fit L3 data cache and first store will be fast
+	// At the very least I get rid of memory page miss on first Stor()
 	for i := 0; i < len(h.data); i++ {
 		h.data[i].reset()
 	}
@@ -165,14 +166,11 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 func (h *Hashtable) find(key string) (index int, collisions int, chainStart int, ok bool) {
 	hc := hashContext{key: key, size: h.size}
 	index = hc.nextIndex()
-	//log.Printf("Find hash %d", hc.firstHash)
 	chainStart = index
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := h.data[index]
-		//log.Printf("Find firstHash %d, act %d", hc.firstHash, it.hash)
 		if it.inUse && (hc.firstHash == it.hash) { //&& (key == it.key)
 			h.statistics.FindSuccess += 1
-			//log.Printf("%v", h.data)
 			return index, collisions, chainStart, true
 		} else {
 			// should be  a rare occasion
@@ -180,11 +178,12 @@ func (h *Hashtable) find(key string) (index int, collisions int, chainStart int,
 			index = hc.nextIndex()
 		}
 	}
-	//log.Printf("%v", h.data)
 	h.statistics.FindFailed += 1
 	return 0, collisions, chainStart, false
 }
 
+// Find the key in the table, return the object
+// Can I assume that Load() is more frequent than Store()?
 func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 	h.statistics.Load += 1
 	if index, collisions, chainStart, ok := h.find(key); ok {
@@ -193,7 +192,6 @@ func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 		// Swap the found item with the first in the "chain" and improve lookup next time
 		// due to CPU caching
 		if collisions > 0 {
-			//log.Printf("Swap %v[%d] %v[%d]", h.data[index], index, h.data[chainStart], chainStart)
 			h.data[index] = h.data[chainStart]
 			h.data[chainStart] = it
 			h.statistics.LoadSwap += 1
