@@ -16,7 +16,7 @@ import (
 // * https://github.com/larytet/emcpp/blob/master/src/HashTable.h
 
 // So far the performance is similar to the Go built-in map
-// For large tables 100K and more random memory access dominates the performance
+// For large tables - 100K+ items - random memory access dominates the performance
 
 type Statistics struct {
 	Store          uint64
