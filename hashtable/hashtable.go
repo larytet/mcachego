@@ -43,7 +43,7 @@ type Statistics struct {
 }
 
 // An item in the hashtable. I want this struct to be as small as possible
-// to reduce data cache miss.
+// to reduce data cache miss. Cache miss dominates the performance for large tables
 // Alternatively I can keep two keys (a bucket) in the same item
 type item struct {
 	// I keep pointers to strings. This is bad for GC - triggers runtime.scanobject()
@@ -55,9 +55,14 @@ type item struct {
 	// 16 bits hash of the key for quick compare
 	// I can set the IN_USE bit with atomic.compareAndSwap() and lock the entry
 	// I will need two bits LOCK and READY to avoid read of partial data
+	// I have two
 	hash uint16
 
 	// I use this field to lock the item with atomic.CompareAndSwap
+	// I modify entries in Store() and Remove()
+	// I need read access in Load()
+	// I lock the entry first if lock fails I try again
+	// I set/clear IN_USE bit if needed and release the lock
 	state uint16
 
 	// Can be an index in a table or an offset from the base of the allocated
@@ -83,8 +88,21 @@ func (i *item) isSame(other *item) bool {
 		(i.key == other.key)
 }
 
+const (
+	ITEM_IN_USE uint16 = 1
+	ITEM_LOCKED uint16 = 2
+)
+
+func (i *item) free() bool {
+	return ((i.state & (ITEM_IN_USE | ITEM_LOCKED)) != 0)
+}
+
 func (i *item) inUse() bool {
-	return (i.hash & ITEM_IN_USE_MASK) != 0
+	return ((i.state & ITEM_IN_USE) == ITEM_IN_USE)
+}
+
+func (i *item) locked() bool {
+	return ((i.state & ITEM_LOCKED) == ITEM_LOCKED)
 }
 
 // This is copy&paste from https://github.com/larytet/emcpp/blob/master/src/HashTable.h
@@ -143,7 +161,7 @@ func (hc *hashContext) nextIndex() (index int) {
 		// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 		hash := xxhash.Sum64String(hc.it.key)
 		hc.step += 1
-		hc.it.hash = hash | ITEM_IN_USE_MASK
+		hc.it.hash = uint16(hash)
 		// The modulo 'hash % hc.size' consumes 50% of the function if the table fits L3 cache
 		// and 20% of the function for large tables
 		hc.index = moduloSize(hash, hc.size)
