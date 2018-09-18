@@ -8,7 +8,13 @@ import (
 )
 
 func TestHashtable(t *testing.T) {
-	t.Logf("Size of hashtable item %d", unsafe.Sizeof(*new(item)))
+	itemSize := unsafe.Sizeof(*new(item))
+	if itemSize%64 != 0 {
+		t.Fatalf("Struct item is not padded: %d bytes", itemSize)
+	}
+	if itemSize != 16 {
+		t.Fatalf("Unexpected size of struct item: %d bytes", itemSize)
+	}
 	size := 10
 	h := New(2*size, 4)
 	for i := 0; i < size; i++ {

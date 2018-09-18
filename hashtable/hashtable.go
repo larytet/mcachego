@@ -61,7 +61,7 @@ type item struct {
 	// I use this field to lock the item with atomic.CompareAndSwap
 	// I modify entries in Store() and Remove()
 	// I need read access in Load()
-	// I lock the entry first if lock fails I try again
+	// I lock the entry first. If acquisition of the lock fails I try again
 	// I set/clear IN_USE bit if needed and release the lock
 	state uint16
 
