@@ -108,8 +108,8 @@ func (i *item) locked() bool {
 // Returns true if succeeds to set both lock and inUse bits
 func (i *item) lockAndSetInUse() bool {
 	ok := false
-	for !item.inUse() {
-		ok = atomic.CompareAndSwapUint32(&i.state, item.state, ITEM_IN_USE|ITEM_LOCKED)
+	for !i.inUse() {
+		ok = atomic.CompareAndSwapUint32(&i.state, i.state, ITEM_IN_USE|ITEM_LOCKED)
 		if ok {
 			break
 		}
@@ -120,7 +120,7 @@ func (i *item) lockAndSetInUse() bool {
 func (i *item) lockAndClearInUse() bool {
 	ok := false
 	for {
-		ok = atomic.CompareAndSwapUint32(&i.state, item.state, ITEM_LOCKED)
+		ok = atomic.CompareAndSwapUint32(&i.state, i.state, ITEM_LOCKED)
 		if ok {
 			break
 		}
