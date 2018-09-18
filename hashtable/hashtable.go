@@ -89,8 +89,8 @@ func (i *item) isSame(other *item) bool {
 }
 
 const (
-	ITEM_IN_USE uint16 = 1
-	ITEM_LOCKED uint16 = 2
+	ITEM_IN_USE uint32 = 1
+	ITEM_LOCKED uint32 = 2
 )
 
 func (i *item) free() bool {
