@@ -57,6 +57,8 @@ type item struct {
 	// I need read access in Load()
 	// I lock the entry first. If acquisition of the lock fails I try again
 	// I set/clear IN_USE bit if needed and release the lock
+	// How can I allow multiple read only locks?
+	// Mutex can be faster when the API is very congested.
 	// See also https://golang.org/ref/mem
 	state uint32
 
@@ -157,7 +159,7 @@ type Hashtable struct {
 	// Resize automatically if not zero
 	ResizeFactor int
 	data         []item
-	mutex        sync.Mutex
+	mutex        sync.RWMutex
 	// Assume 64 bits reliable
 	RelyOnHash bool
 }
