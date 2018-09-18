@@ -57,6 +57,7 @@ type item struct {
 	// I need read access in Load()
 	// I lock the entry first. If acquisition of the lock fails I try again
 	// I set/clear IN_USE bit if needed and release the lock
+	// See also https://golang.org/ref/mem
 	state uint32
 
 	// Can be an index in a table or an offset from the base of the allocated
@@ -106,6 +107,7 @@ func (i *item) locked() bool {
 }
 
 // Returns true if succeeds to set both lock and inUse bits
+// Returns false if inUse is set already
 func (i *item) lockAndSetInUse() bool {
 	ok := false
 	for !i.inUse() {
@@ -223,17 +225,19 @@ func (h *Hashtable) Store(key string, value uintptr) bool {
 	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
-		// The next line - random memory access - dominates execution time
-		// for tables 100K entries and above
+		// The next line - random memory access. It dominates execution time for tables 100K entries and above
 		// Data cache miss (and memory page miss?) sucks
-		inUse := it.inUse()
-		if !inUse {
+		// Memory barrier of CAS comes on top
+		lockSuccess := it.lockAndSetInUse()
+		if lockSuccess {
 			// I can swap the first item in the "chain" with this item and improve lookup time for freshly inserted items
 			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 			h.statistics.StoreSuccess += 1
 			it.key = key
 			it.hash = hc.it.hash
 			it.value = value
+			// Potential bug here - I want to ensure that all previous assignments are done
+			it.unlock()
 			if collisions > 0 {
 				if h.statistics.MaxCollisions < uint64(collisions) {
 					h.statistics.MaxCollisions = uint64(collisions)
