@@ -2,10 +2,10 @@ package hashtable
 
 import (
 	//	"encoding/binary"
-	"atomic"
 	"github.com/cespare/xxhash"
 	"log"
 	"sync"
+	"sync/atomic"
 )
 
 // An alternative for Go runtime implemenation of map[string]uintptr
@@ -52,22 +52,22 @@ type item struct {
 	// I can also rely on 64 bits (or 128 bits) hash and report collisions
 	key string
 
-	// 16 bits hash of the key for quick compare
-	// I can set the IN_USE bit with atomic.compareAndSwap() and lock the entry
-	// I will need two bits LOCK and READY to avoid read of partial data
-	// I have two
-	hash uint16
-
 	// I use this field to lock the item with atomic.CompareAndSwap
 	// I modify entries in Store() and Remove()
 	// I need read access in Load()
 	// I lock the entry first. If acquisition of the lock fails I try again
 	// I set/clear IN_USE bit if needed and release the lock
-	state uint16
+	state uint32
 
 	// Can be an index in a table or an offset from the base of the allocated
 	// memory pool
 	value uint32
+
+	// 16 bits hash of the key for quick compare
+	// I can set the IN_USE bit with atomic.compareAndSwap() and lock the entry
+	// I will need two bits LOCK and READY to avoid read of partial data
+	// I have two
+	hash uint16
 
 	// Add padding for 64 bytes cache line?
 }
@@ -103,6 +103,45 @@ func (i *item) inUse() bool {
 
 func (i *item) locked() bool {
 	return ((i.state & ITEM_LOCKED) == ITEM_LOCKED)
+}
+
+// Returns true if succeeds to set both lock and inUse bits
+func (i *item) lockAndSetInUse() bool {
+	ok := false
+	for !item.inUse() {
+		ok = atomic.CompareAndSwapUint32(&i.state, item.state, ITEM_IN_USE|ITEM_LOCKED)
+		if ok {
+			break
+		}
+	}
+	return ok
+}
+
+func (i *item) lockAndClearInUse() bool {
+	ok := false
+	for {
+		ok = atomic.CompareAndSwapUint32(&i.state, item.state, ITEM_LOCKED)
+		if ok {
+			break
+		}
+	}
+	return ok
+}
+
+// Returns true if succeeds to set both lock and inUse bits
+func (i *item) lock() bool {
+	ok := false
+	for {
+		ok = atomic.CompareAndSwapUint32(&i.state, i.state, i.state|ITEM_LOCKED)
+		if ok {
+			break
+		}
+	}
+	return ok
+}
+
+func (i *item) unlock() {
+	atomic.StoreUint32(&i.state, i.state&(^ITEM_LOCKED))
 }
 
 // This is copy&paste from https://github.com/larytet/emcpp/blob/master/src/HashTable.h
