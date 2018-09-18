@@ -118,6 +118,16 @@ func (p *Pool) Belongs(ptr unsafe.Pointer) bool {
 	return res
 }
 
+// Returns address of the first block in the pool. All blocks are in
+// a contiguous memory range
+// An application can keep only offset of the allocated blocks instead of
+// 64 bits address and save memory
+// This is also a backdoor if the application wishes to do initialization
+// of the blocks
+func (p *Pool) GetBase() uintptr {
+	return p.minAddr
+}
+
 func (p *Pool) GetStatistics() Statistics {
 	return *p.statistics
 }
