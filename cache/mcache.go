@@ -115,6 +115,7 @@ func nanotime() int64
 // The wrapper costs 5ns per call
 func GetTime() TimeMs {
 	res := TimeMs(uint64(nanotime()) & ((uint64(1) << 32) - 1))
+	log.Printf("Time %d", res)
 	return res
 }
 
