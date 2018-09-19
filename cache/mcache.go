@@ -114,7 +114,7 @@ func nanotime() int64
 // Go does not inline functions? https://lemire.me/blog/2017/09/05/go-does-not-inline-functions-when-it-should/
 // The wrapper costs 5ns per call
 func GetTime() TimeMs {
-	res := TimeMs(uint64(nanotime()) & ((uint64(1) << 32) - 1))
+	res := TimeMs(uint64(nanotime()) / (1000 * 1000))
 	log.Printf("Time %d", res)
 	return res
 }

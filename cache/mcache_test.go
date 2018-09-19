@@ -15,6 +15,16 @@ import (
 var TTL TimeMs = 10
 var smallCache = New(1, 0, TTL)
 
+func TestGetTime(t *testing.T) {
+	t0 := GetTime()
+	time.Sleep(time.Second)
+	t1 := GetTime()
+	d := t1 - t0
+	if t1-t0 < 1000 {
+		t.Fatalf("Sleep is shorter than expected %d", d)
+	}
+}
+
 func TestAdd(t *testing.T) {
 	itemSize := unsafe.Sizeof(*new(item))
 	if itemSize != 8 {
@@ -39,13 +49,16 @@ func TestAdd(t *testing.T) {
 func TestRemove(t *testing.T) {
 	smallCache.Reset()
 	start := GetTime()
+	t.Logf("GetTime returned start=%d", start)
 	smallCache.Store("0", 0, start)
 	_, evicted := smallCache.Evict(start, false)
 	if evicted {
 		t.Fatalf("Evicted entry before it expired")
 	}
 	time.Sleep(time.Second)
-	_, evicted = smallCache.Evict(GetTime(), false)
+	now := GetTime()
+	t.Logf("GetTime returned now=%d", now)
+	//	_, evicted = smallCache.Evict(now, false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
@@ -54,7 +67,7 @@ func TestRemove(t *testing.T) {
 		t.Fatalf("Failed to remove value from the cache")
 	}
 
-	_, evicted = smallCache.Evict(GetTime(), false)
+	_, evicted = smallCache.Evict(now, false)
 	if evicted {
 		t.Fatalf("Evicted from empty cache")
 	}
