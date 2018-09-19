@@ -16,6 +16,10 @@ var TTL int64 = 10
 var smallCache = New(1, 0, int64(TTL))
 
 func TestAdd(t *testing.T) {
+	itemSize := unsafe.Sizeof(*new(item))
+	if itemSize != 8 {
+		t.Fatalf("Cache item size %d is not 64 bits", itemSize)
+	}
 	if smallCache.Len() != 0 {
 		t.Fatalf("Cache is not empty %d", smallCache.Len())
 	}

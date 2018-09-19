@@ -138,10 +138,11 @@ type shard struct {
 type Cache struct {
 	ttl TimeMs
 	// FIFO of the items to support eviction of the expired entries
-	fifo       *itemFifo
-	size       int
-	shards     []shard
-	statistics *Statistics
+	fifo        *itemFifo
+	size        int
+	shards      []shard
+	shardsCount uint64
+	statistics  *Statistics
 }
 
 // Create a new instance of Cache
@@ -154,6 +155,7 @@ func New(size int, shards int, ttl TimeMs) *Cache {
 	c := new(Cache)
 	c.size, c.ttl = size, ttl
 	c.shards = make([]shard, shards, shards)
+	c.shardsCount = uint64(len(c.shards))
 	shardSize := size / shards
 	for _, shard := range c.shards {
 		shard.table = hashtable.New(shardSize, 32)
@@ -197,40 +199,37 @@ func (c *Cache) Store(key Key, o Object, now TimeMs) bool {
 	// A temporary variable helps to profile the code
 	i := item{o: o, expirationNs: now + c.ttl}
 
+	hash := xxhash.Sum64String(string(key))
+	shardIdx := hash & c.shardsCount
+	shard := &c.shards[shardIdx]
+
 	// 85% of the CPU cycles are spent here. Go lang map is rather slow
 	// Trivial map[int32]int32 requires 90ns to add an entry
 	// What about a custom implementation of map? Can I do better than
 	// 120ns (400 CPU cycles)?
-	hash := xxhash.Sum64String(string(key))
-	shard := hash % len(c.shards)
-	c.data[key] = i
+	shard.mutex.Lock()
+	shard.table.Store(key, o)
 	ok := c.fifo.add(key)
-	count := uint64(len(c.data))
-	if c.statistics.MaxOccupancy < count {
-		c.statistics.MaxOccupancy = count
-	}
-	return ok
-}
+	count := c.fifo.Len()
+	shard.mutex.Unlock()
 
-// For highly congested systems most choose sharding. Should I?
-func (c *Cache) StoreSync(key Key, o Object) bool {
-	c.mutex.Lock()
-	ok := c.Store(key, o, nanotime())
-	c.mutex.Unlock()
+	if c.statistics.MaxOccupancy < uint64(count) {
+		c.statistics.MaxOccupancy = uint64(count)
+	}
 	return ok
 }
 
 // Lookup in the cache
 func (c *Cache) Load(key Key) (o Object, ok bool) {
-	i, ok := c.data[key]
-	return i.o, ok
-}
+	hash := xxhash.Sum64String(string(key))
+	shardIdx := hash & c.shardsCount
+	shard := &c.shards[shardIdx]
 
-func (c *Cache) LoadSync(key Key) (o Object, ok bool) {
-	c.mutex.RLock()
-	o, ok = c.Load(key)
-	c.mutex.RUnlock()
-	return o, ok
+	shard.mutex.RLock()
+	i, ok := shard.table.Load(key)
+	shard.mutex.RUnlock()
+
+	return i.o, ok
 }
 
 func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
@@ -275,12 +274,5 @@ func (c *Cache) Evict(now int64, force bool) (o Object, expired bool, nextExpira
 		i := c.data[key]
 		nextExpirationNs = i.expirationNs - now
 	}
-	return o, expired, nextExpirationNs
-}
-
-func (c *Cache) EvictSync(now int64, force bool) (o Object, expired bool, nextExpirationNs int64) {
-	c.mutex.Lock()
-	o, expired, nextExpirationNs = c.Evict(now, force)
-	c.mutex.Unlock()
 	return o, expired, nextExpirationNs
 }
