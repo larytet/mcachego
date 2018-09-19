@@ -82,7 +82,11 @@ func (s *itemFifo) remove() (key string, ok bool) {
 	}
 }
 
-func (s *itemFifo) peek() (key string, ok bool) {
+// I assume that this API is "reasonably" tread safe. Will not cause
+// problems if there is a race
+// s.head is modified by remove() and is an atomic operation
+// I do not care about valifity of s.tai
+func (s *itemFifo) pick() (key string, ok bool) {
 	if s.head != s.tail {
 		key = s.data[s.head]
 		return key, true
@@ -233,8 +237,17 @@ func (c *Cache) Load(key string) (o Object, ok bool) {
 
 func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
 	c.statistics.EvictCalled += 1
-	if key, ok := c.fifo.peek(); ok {
-		if i, ok := c.data[key]; ok {
+	o, expired = 0, false
+	// If there is a race I will pick a removed entry or fail to pick anything
+	// or pick a not initialized ("") key
+	key, ok := c.fifo.pick()
+	if ok {
+		hash := xxhash.Sum64String(string(key))
+		shardIdx := hash & c.shardsCount
+		shard := &c.shards[shardIdx]
+		shard.mutex.Lock()
+		// I can save hashing if I keep the hash in the FIFO
+		if i, ok := shard.table.Load(key, hash); ok {
 			expired := ((i.expirationNs - now) < 0)
 			if expired || force {
 				c.statistics.EvictExpired += 1
@@ -243,7 +256,8 @@ func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
 				}
 				c.fifo.remove()
 				delete(c.data, key)
-				return i.o, true
+				shard.mutex.Unlock()
+				o, expired = i.o, true
 			} else {
 				c.statistics.EvictNotExpired += 1
 			}
@@ -252,11 +266,13 @@ func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
 			// memory leak?
 			c.statistics.EvictLookupFailed += 1
 		}
+		shard.mutex.Unlock()
 	} else {
 		// Probably expiration FIFO is empty - nothing to do
 		c.statistics.EvictPeekFailed += 1
 	}
-	return 0, false
+
+	return o, expired
 }
 
 func (c *Cache) GetStatistics() Statistics {
@@ -268,7 +284,7 @@ func (c *Cache) GetStatistics() Statistics {
 func (c *Cache) Evict(now int64, force bool) (o Object, expired bool, nextExpirationNs int64) {
 	nextExpirationNs = 0
 	o, expired = c.evict(now, force)
-	key, ok := c.fifo.peek()
+	key, ok := c.fifo.pick()
 	if ok {
 		i := c.data[key]
 		nextExpirationNs = i.expirationNs - now
