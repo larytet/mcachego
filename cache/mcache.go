@@ -2,7 +2,7 @@ package mcache
 
 import (
 	"github.com/cespare/xxhash"
-	//"log"
+	"log"
 	"mcachego/hashtable"
 	"runtime"
 	"sync"
@@ -32,7 +32,7 @@ type TimeMs int32
 // If I keep the item struct small I can avoid memory pools for items
 // I want a benchmark here: copy vs custom memory pool
 type item struct {
-	expirationNs TimeMs
+	expirationMs TimeMs
 	o            Object
 }
 
@@ -114,7 +114,8 @@ func nanotime() int64
 // Go does not inline functions? https://lemire.me/blog/2017/09/05/go-does-not-inline-functions-when-it-should/
 // The wrapper costs 5ns per call
 func GetTime() TimeMs {
-	return TimeMs(nanotime() / (1000 * 1000))
+	res := TimeMs(uint64(nanotime()) & ((uint64(1) << 32) - 1))
+	return res
 }
 
 type Statistics struct {
@@ -196,12 +197,13 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 
 	// I can save an assignment here by using user prepared items
 	// The idea is to require using of the UnsafePool() and pad 64 bits
-	// expirationNs to the user structure
+	// expirationMs to the user structure
 	// This is very C/C++ style
 
 	// A temporary variable helps to profile the code
-	i := item{o: o, expirationNs: now + c.ttl}
+	i := item{o: o, expirationMs: now + c.ttl}
 	iValue := *((*uintptr)(unsafe.Pointer(&i)))
+	log.Printf("Store item %x %d %d", iValue, i.expirationMs, now)
 
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsMask
@@ -255,7 +257,8 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 		// I can save hashing if I keep the hash in the FIFO
 		if iValue, ok, ref := shard.table.Load(key, hash); ok {
 			i := (*item)(unsafe.Pointer(&iValue))
-			expired := ((i.expirationNs - now) < 0)
+			log.Printf("Pick item %x %d %d", ref, i.expirationMs, now)
+			expired := ((i.expirationMs - now) < 0)
 			if expired || force {
 				c.statistics.EvictExpired += 1
 				if !expired {

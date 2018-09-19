@@ -198,7 +198,7 @@ func BenchmarkStackAllocationMap(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		it := item{o: Object(i), expirationNs: now + TTL}
+		it := item{o: Object(i), expirationMs: now + TTL}
 		m[uintptr(it.o)] = uintptr(it.o)
 	}
 }
