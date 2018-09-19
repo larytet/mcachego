@@ -224,9 +224,10 @@ func (c *Cache) Load(key string) (o Object, ok bool) {
 	shard := &c.shards[shardIdx]
 
 	shard.mutex.RLock()
-	i, ok := shard.table.Load(key)
+	iValue, ok := shard.table.Load(key, hash)
 	shard.mutex.RUnlock()
 
+	i := (*item)(unsafe.Pointer(iValue))
 	return i.o, ok
 }
 
