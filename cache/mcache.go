@@ -1,6 +1,7 @@
 package mcache
 
 import (
+	"runtime"
 	"sync"
 	_ "unsafe" // I need this for runtime.nanotime()
 )
@@ -128,9 +129,14 @@ type Cache struct {
 
 var ns = int64(1000 * 1000)
 
+// Create a new instance of Cache
+// If 'shards' is zero the table will use 2*runtime.NumCPU()
 func New(size int, shards int, ttl int64) *Cache {
+	if shards == 0 {
+		shards = 2 * runtime.NumCPU()
+	}
 	c := new(Cache)
-	c.size, c.sharrds = size, shards
+	c.size, c.shards = size, shards
 	c.ttl = ns * ttl
 	c.Reset()
 	return c
