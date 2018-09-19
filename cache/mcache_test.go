@@ -87,20 +87,21 @@ func TestAddCustomType(t *testing.T) {
 	myData.a = 1
 	myData.b = 2
 
-	smallCache.Store("0", Object(ptr), Nanotime())
+	smallCache.Store("0", Object(uintptr(ptr)-pool.GetBase()), Nanotime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
 	o, evicted := smallCache.Evict(Nanotime(), false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
-	myData = (*MyData)(unsafe.Pointer(o))
+	oAddress := unsafe.Pointer(uintptr(o) + pool.GetBase())
+	myData = (*MyData)(oAddress)
 	if myData.a != 1 || myData.b != 2 {
 		t.Fatalf("Failed to recover the original data %v", myData)
 	}
-	if !pool.Belongs(unsafe.Pointer(o)) {
+	if !pool.Belongs(oAddress) {
 		t.Fatalf("Bad pointer %v is allocated from the pool", o)
 	}
-	if ok = pool.Free(unsafe.Pointer(o)); !ok {
+	if ok = pool.Free(oAddress); !ok {
 		t.Fatalf("Failed to free ptr %v", o)
 	}
 	if ok = pool.Free(unsafe.Pointer(pool)); ok {
@@ -113,7 +114,7 @@ func TestAddCustomType(t *testing.T) {
 
 func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
-	cache := New(b.N, 0, int64(TTL))
+	cache := New(b.N, 0, TTL)
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), b.N)
 	now := Nanotime()
 	keys := make([]string, b.N, b.N)
@@ -133,13 +134,14 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 		if !pool.Belongs(p) {
 			b.Fatalf("Bad pointer %p is allocated from the pool", p)
 		}
-		if ok := cache.Store(Key(keys[i]), Object(p), now); !ok {
+		if ok := cache.Store(keys[i], Object(uintptr(p)-pool.GetBase()), now); !ok {
 			b.Fatalf("Failed to add item %d", i)
 		}
 	}
 	now += 1000*1000*TTL + 1
 	for i := 0; i < b.N; i++ {
-		p, expired, _ := cache.Evict(now, false)
+		pOffset, expired := cache.Evict(now, false)
+		p := unsafe.Pointer(uintptr(pOffset) + pool.GetBase())
 		if !expired {
 			b.Fatalf("Failed to evict %v", i)
 		}
@@ -211,7 +213,7 @@ func BenchmarkFifo(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ok := fifo.add(Key(i))
+		ok := fifo.add(string(i))
 		if !ok {
 			b.Fatalf("Failed to add an object to the FIFO %d", i)
 		}
@@ -366,10 +368,10 @@ func BenchmarkStore(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("000000  %d", b.N-i)
 	}
-	cache := New(b.N, 0, int64(TTL))
+	cache := New(b.N, 0, TTL)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if ok := cache.Store(Key(keys[i]), Object(i), now); !ok {
+		if ok := cache.Store(keys[i], Object(i), now); !ok {
 			b.Fatalf("Failed to add item %d", i)
 		}
 	}

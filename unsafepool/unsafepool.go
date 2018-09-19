@@ -61,6 +61,12 @@ func (p *Pool) Availability() int {
 	return int(p.top)
 }
 
+// Pool keeps objects in contiguous memory
+// Application can keep only offset from the start of the range
+func (p *Pool) GetBase() uintptr {
+	return p.minAddr
+}
+
 func (p *Pool) Reset() {
 	for i := 0; i < p.objectCount; i += 1 {
 		p.stack[i] = unsafe.Pointer(&p.data[i*p.objectSize])

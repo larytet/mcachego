@@ -28,7 +28,7 @@ func TestHashtable(t *testing.T) {
 	}
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
-		v, ok := h.Load(key, xxhash.Sum64String(key))
+		v, ok, _ := h.Load(key, xxhash.Sum64String(key))
 		if !ok {
 			t.Fatalf("Failed to find key %v in the hashtable", key)
 		}
@@ -48,7 +48,7 @@ func TestHashtable(t *testing.T) {
 	}
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
-		v, ok := h.Load(key, xxhash.Sum64String(key))
+		v, ok, _ := h.Load(key, xxhash.Sum64String(key))
 		if ok {
 			t.Fatalf("Found key %v in the empty hashtable", key)
 		}
@@ -101,7 +101,7 @@ func BenchmarkHashtableLoad(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := keys[i]
-		v, ok := h.Load(key, hashes[i])
+		v, ok, _ := h.Load(key, hashes[i])
 		if !ok {
 			b.Fatalf("Failed to find key %v in the hashtable", key)
 		}
