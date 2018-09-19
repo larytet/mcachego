@@ -122,14 +122,15 @@ type Cache struct {
 	// FIFO of the items to support eviction of the expired entries
 	fifo       *itemFifo
 	size       int
+	shards     int
 	statistics *Statistics
 }
 
 var ns = int64(1000 * 1000)
 
-func New(size int, ttl int64) *Cache {
+func New(size int, shards int, ttl int64) *Cache {
 	c := new(Cache)
-	c.size = size
+	c.size, c.sharrds = size, shards
 	c.ttl = ns * ttl
 	c.Reset()
 	return c

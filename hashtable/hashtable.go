@@ -126,38 +126,33 @@ type hashContext struct {
 	it    item
 	index int
 	size  int
-	step  int
 }
 
 // This is naive. What I want to do here is sharding based on 8 LSBs
 // Bad choise of "size" will cause collisions
+// Collision attack is possible here
+// I should rotate hash functions
+// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
+// Usage firstIndex(xxhash.Sum64String(key))
+func (hc *hashContext) firstIndex(hash uint64) (index int) {
+	hc.it.hash = hash | ITEM_IN_USE_MASK
+	// The modulo 'hash % hc.size' consumes 50% of the function if the table fits L3 cache
+	// and 20% of the function for large tables
+	hc.index = moduloSize(hash, hc.size)
+	return hc.index
+}
+
 func (hc *hashContext) nextIndex() (index int) {
-	if hc.step == 0 {
-		// Collision attack is possible here
-		// I should rotate hash functions
-		// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
-		hash := xxhash.Sum64String(hc.it.key)
-		hc.step += 1
-		hc.it.hash = hash | ITEM_IN_USE_MASK
-		// The modulo 'hash % hc.size' consumes 50% of the function if the table fits L3 cache
-		// and 20% of the function for large tables
-		hc.index = moduloSize(hash, hc.size)
-	} else {
-		// rehash the hash ?
-		//bs := []byte{0, 0, 0, 0, 0, 0, 0, 0} // https://stackoverflow.com/questions/16888357/convert-an-integer-to-a-byte-array
-		//binary.LittleEndian.PutUint64(bs, hc.hash)
-		//hash = xxhash.Sum64(bs)
-		hc.index += 1
-	}
+	hc.index += 1
 	return hc.index
 }
 
 // Store a key:value pair in the hashtable
-func (h *Hashtable) Store(key string, value uintptr) bool {
+func (h *Hashtable) Store(key string, hash uintptr, value uintptr) bool {
 	h.statistics.Store += 1
 
 	hc := hashContext{it: item{key: key}, size: h.size}
-	index := hc.nextIndex()
+	index := hc.firstIndex(hash)
 	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
@@ -215,7 +210,7 @@ func (h *Hashtable) find(key string) (index int, collisions int, chainStart int,
 
 // Find the key in the table, return the object
 // Can I assume that Load() is more frequent than Store()?
-func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
+func (h *Hashtable) Load(key string, hash uintptr) (value uintptr, ok bool) {
 	h.statistics.Load += 1
 	if index, collisions, chainStart, ok := h.find(key); ok {
 		h.statistics.LoadSuccess += 1
@@ -234,7 +229,7 @@ func (h *Hashtable) Load(key string) (value uintptr, ok bool) {
 	return 0, false
 }
 
-func (h *Hashtable) Remove(key string) (value uintptr, ok bool) {
+func (h *Hashtable) Remove(key string, hash uintptr) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
 	if index, collisions, _, ok := h.find(key); ok {
 		h.statistics.RemoveSuccess += 1
