@@ -13,7 +13,8 @@ import (
 )
 
 var TTL TimeMs = 10
-var smallCache = New(1, 0, TTL)
+
+var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
 
 func TestGetTime(t *testing.T) {
 	t0 := GetTime()
@@ -126,7 +127,7 @@ func TestAddCustomType(t *testing.T) {
 
 func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
-	cache := New(2*b.N, 0, TTL)
+	cache := New(Configuration{Size: b.N, Ttl: TTL, LoadFactor: 50})
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), b.N)
 	now := GetTime()
 	keys := make([]string, b.N, b.N)
@@ -380,7 +381,7 @@ func BenchmarkStore(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
 	}
-	cache := New(2*b.N, 0, TTL)
+	cache := New(Configuration{Size: b.N, Ttl: TTL, LoadFactor: 50})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if ok := cache.Store(keys[i], Object(i), now); !ok {

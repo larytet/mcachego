@@ -138,28 +138,46 @@ type shard struct {
 	mutex sync.RWMutex
 }
 
+type Configuration struct {
+	Size       int
+	Shards     int
+	Ttl        TimeMs
+	Collisions int
+	// Try 50(%) load factor - size of Hashtable 2*Size
+	LoadFactor int
+}
+
 type Cache struct {
-	ttl TimeMs
 	// FIFO of the items to support eviction of the expired entries
-	fifo       *itemFifo
-	size       int
-	shards     []shard
-	shardsMask uint64
-	statistics *Statistics
+	fifo          *itemFifo
+	size          int
+	shards        []shard
+	shardsMask    uint64
+	statistics    *Statistics
+	configuration Configuration
 }
 
 // Create a new instance of Cache
 // If 'shards' is zero the table will use 2*runtime.NumCPU()
-func New(size int, shards int, ttl TimeMs) *Cache {
-	if shards == 0 {
-		shards = 2 * runtime.NumCPU()
-	}
-	shards = hashtable.GetPower2(shards)
+func New(configuration Configuration) *Cache {
 	c := new(Cache)
-	c.size, c.ttl = size, ttl
-	c.shards = make([]shard, shards, shards)
-	c.shardsMask = uint64(len(c.shards)) - 1
-	shardSize := size / shards
+
+	if configuration.Shards == 0 {
+		configuration.Shards = 2 * runtime.NumCPU()
+	}
+	// Force power of 2
+	configuration.Shards = hashtable.GetPower2(configuration.Shards)
+	c.shardsMask = uint64(configuration.Shards) - 1
+	if configuration.LoadFactor == 0 {
+		configuration.LoadFactor = 50
+	}
+	if configuration.Collisions == 0 {
+		configuration.Collisions = 64
+	}
+	c.configuration = configuration
+	c.size = (c.configuration.Size * 100) / c.configuration.LoadFactor
+	c.shards = make([]shard, configuration.Shards, configuration.Shards)
+	shardSize := c.size / configuration.Shards
 	for i, _ := range c.shards {
 		c.shards[i].table = hashtable.New(shardSize, 64)
 	}
@@ -201,7 +219,7 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 	// This is very C/C++ style
 
 	// A temporary variable helps to profile the code
-	i := item{o: o, expirationMs: now + c.ttl}
+	i := item{o: o, expirationMs: now + c.configuration.Ttl}
 	iValue := *((*uintptr)(unsafe.Pointer(&i)))
 
 	hash := xxhash.Sum64String(string(key))
