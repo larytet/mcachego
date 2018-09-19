@@ -1,7 +1,7 @@
 package mcache
 
 import (
-	"mcache/hashtable"
+	"mcachego/hashtable"
 	"runtime"
 	"sync"
 	_ "unsafe" // I need this for runtime.nanotime()
