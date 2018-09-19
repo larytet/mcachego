@@ -81,8 +81,6 @@ func TestAddCustomType(t *testing.T) {
 	if !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
 	}
-	t.Logf("Allocated %p", ptr)
-
 	myData := (*MyData)(ptr)
 	myData.a = 1
 	myData.b = 2

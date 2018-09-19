@@ -2,7 +2,7 @@ package mcache
 
 import (
 	"github.com/cespare/xxhash"
-	"log"
+	//"log"
 	"mcachego/hashtable"
 	"runtime"
 	"sync"
@@ -114,7 +114,7 @@ func nanotime() int64
 // Go does not inline functions? https://lemire.me/blog/2017/09/05/go-does-not-inline-functions-when-it-should/
 // The wrapper costs 5ns per call
 func Nanotime() TimeMs {
-	return TimeMs(nanotime())
+	return TimeMs(nanotime() / (1000 * 1000))
 }
 
 type Statistics struct {
@@ -140,11 +140,11 @@ type shard struct {
 type Cache struct {
 	ttl TimeMs
 	// FIFO of the items to support eviction of the expired entries
-	fifo        *itemFifo
-	size        int
-	shards      []shard
-	shardsCount uint64
-	statistics  *Statistics
+	fifo       *itemFifo
+	size       int
+	shards     []shard
+	shardsMask uint64
+	statistics *Statistics
 }
 
 // Create a new instance of Cache
@@ -157,7 +157,7 @@ func New(size int, shards int, ttl TimeMs) *Cache {
 	c := new(Cache)
 	c.size, c.ttl = size, ttl
 	c.shards = make([]shard, shards, shards)
-	c.shardsCount = uint64(len(c.shards))
+	c.shardsMask = uint64(len(c.shards)) - 1
 	shardSize := size / shards
 	for i, _ := range c.shards {
 		c.shards[i].table = hashtable.New(shardSize, 32)
@@ -204,7 +204,7 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 	iValue := *((*uintptr)(unsafe.Pointer(&i)))
 
 	hash := xxhash.Sum64String(string(key))
-	shardIdx := hash & c.shardsCount
+	shardIdx := hash & c.shardsMask
 	shard := &c.shards[shardIdx]
 
 	// 85% of the CPU cycles are spent here. Go lang map is rather slow
@@ -226,14 +226,14 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 // Lookup in the cache
 func (c *Cache) Load(key string) (o Object, ok bool) {
 	hash := xxhash.Sum64String(string(key))
-	shardIdx := hash & c.shardsCount
+	shardIdx := hash & c.shardsMask
 	shard := &c.shards[shardIdx]
 
 	shard.mutex.RLock()
 	iValue, ok, _ := shard.table.Load(key, hash)
 	shard.mutex.RUnlock()
 
-	i := (*item)(unsafe.Pointer(iValue))
+	i := *(*item)(unsafe.Pointer(&iValue))
 	return i.o, ok
 }
 
@@ -247,14 +247,14 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 	key, ok := c.fifo.pick()
 	if ok {
 		hash := xxhash.Sum64String(string(key))
-		shardIdx := hash & c.shardsCount
+		shardIdx := hash & c.shardsMask
 		shard := &c.shards[shardIdx]
 
 		shard.mutex.Lock()
 
 		// I can save hashing if I keep the hash in the FIFO
 		if iValue, ok, ref := shard.table.Load(key, hash); ok {
-			i := (*item)(unsafe.Pointer(iValue))
+			i := (*item)(unsafe.Pointer(&iValue))
 			expired := ((i.expirationNs - now) < 0)
 			if expired || force {
 				c.statistics.EvictExpired += 1
