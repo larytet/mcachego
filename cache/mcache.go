@@ -2,6 +2,7 @@ package mcache
 
 import (
 	"github.com/cespare/xxhash"
+	"log"
 	"mcachego/hashtable"
 	"runtime"
 	"sync"
@@ -158,8 +159,8 @@ func New(size int, shards int, ttl TimeMs) *Cache {
 	c.shards = make([]shard, shards, shards)
 	c.shardsCount = uint64(len(c.shards))
 	shardSize := size / shards
-	for _, shard := range c.shards {
-		shard.table = hashtable.New(shardSize, 32)
+	for i, _ := range c.shards {
+		c.shards[i].table = hashtable.New(shardSize, 32)
 	}
 	c.Reset()
 	return c
@@ -175,6 +176,7 @@ func (c *Cache) Size() int {
 	return c.fifo.size
 }
 
+// This API is not thread safe
 func (c *Cache) Reset() {
 	// Probably faster and more reliable is to allocate everything
 	// than try to call delete()
