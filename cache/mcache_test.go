@@ -14,8 +14,6 @@ import (
 
 var TTL TimeMs = 10
 
-var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
-
 func TestGetTime(t *testing.T) {
 	t0 := GetTime()
 	time.Sleep(time.Second)
@@ -30,6 +28,7 @@ func TestGetTime(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
+	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
 	itemSize := unsafe.Sizeof(*new(item))
 	if itemSize != 8 {
 		t.Fatalf("Cache item size %d is not 64 bits", itemSize)
@@ -51,7 +50,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	smallCache.Reset()
+	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
 	start := GetTime()
 	smallCache.Store("0", 0, start)
 	_, evicted := smallCache.Evict(start, false)
@@ -76,7 +75,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestOverflow(t *testing.T) {
-	smallCache.Reset()
+	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
 	if ok := smallCache.Store("0", 0, GetTime()); !ok {
 		t.Fatalf("Failed to store value in the cache")
 	}
@@ -91,6 +90,7 @@ type MyData struct {
 }
 
 func TestAddCustomType(t *testing.T) {
+	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), 1)
 	ptr, ok := pool.Alloc()
 	if !ok {

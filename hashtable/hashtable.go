@@ -101,9 +101,7 @@ type Hashtable struct {
 
 func New(size int, maxCollisions int) (h *Hashtable) {
 	h = new(Hashtable)
-	// size = GetPower2Sub1(size)
 	size = getSize(size)
-	//size = getPrime(size)
 	h.size = size
 	h.maxCollisions = maxCollisions
 	// allow collision for the last entry in the table
@@ -216,6 +214,7 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 	if index, collisions, chainStart, ok := h.find(key, hash); ok {
 		h.statistics.LoadSuccess += 1
 		it := &h.data[index]
+		value = it.value
 		// Swap the found item with the first in the "chain" and improve lookup next time
 		// due to CPU caching
 		if collisions > 0 {
@@ -223,7 +222,6 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 			h.data[chainStart] = *it
 			h.statistics.LoadSwap += 1
 		}
-		value = it.value
 		return value, true, uintptr(unsafe.Pointer(it))
 	}
 	h.statistics.LoadFailed += 1

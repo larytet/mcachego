@@ -106,7 +106,7 @@ func BenchmarkHashtableLoad(b *testing.B) {
 			b.Fatalf("Failed to find key %v in the hashtable", key)
 		}
 		if v != uintptr(i) {
-			b.Fatalf("Got %v instead of %v from the hashtable", v, i)
+			b.Fatalf("Got %v instead of %v from the hashtable. b.N=%d", v, i, b.N)
 		}
 	}
 }
