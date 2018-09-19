@@ -52,12 +52,13 @@ type item struct {
 	// I can also rely on 64 bits (or 128 bits) hash and report collisions
 	key string
 
-	// 64 bits hash of the key for quick compare
-	// I can set the IN_USE bit with atomic.compareAndSwap() and lock the entry
-	// I will need two bits LOCK and READY to avoid read of partial data
-	hash  uint64
+	// User value
 	value uintptr
 
+	// hash of the key for quick compare
+	// I can set the IN_USE bit with atomic.compareAndSwap() and lock the entry
+	// I will need two bits LOCK and READY to avoid read of partial data
+	hash uint32
 	// Add padding for 64 bytes cache line?
 }
 

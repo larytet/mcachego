@@ -9,7 +9,10 @@ import (
 )
 
 func TestHashtable(t *testing.T) {
-	t.Logf("Size of hashtable item %d", unsafe.Sizeof(*new(item)))
+	itemSize := unsafe.Sizeof(*new(item))
+	if itemSize%8 != 0 {
+		t.Fatalf("Hashtable item size %d is not alligned", itemSize)
+	}
 	size := 10
 	h := New(2*size, 4)
 	for i := 0; i < size; i++ {

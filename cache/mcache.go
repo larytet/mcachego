@@ -9,10 +9,10 @@ import (
 // a string key and int32 key have roughly the same benchmarks (!?)
 type Key string
 
-// I have three  choices here:
+// I have three choices here:
 //  * Allow the user to specify Object type
 //  * Use type Object interface{}
-//  * Use uintptr() to the user defined structures
+//  * Use uintptr() (truncated to 32 bits) to the user defined structures
 // Without generics I will need a separate cache for every user type
 // If I use a type safe and GC safe interface{}, somewhere up the stack somebody will have to type assert Object
 // and pay 20ns per Load()
@@ -21,14 +21,14 @@ type Key string
 // See also insane runtime.noescape() discussion
 //  in https://segment.com/blog/allocation-efficiency-in-high-performance-go-services/
 // The user is expected to allocate pointers from a pool like UnsafePool
-type Object uintptr
+type Object uint32
 
 // Straight from https://github.com/patrickmn/go-cache
 // Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
 // If I keep the item struct small I can avoid memory pools for items
 // I want a benchmark here: copy vs custom memory pool
 type item struct {
-	expirationNs int64
+	expirationNs uint32
 	o            Object
 }
 
