@@ -231,7 +231,7 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 }
 
 func (h *Hashtable) RemoveByRef(ref uintptr) {
-	it := (*item)(unsafe.Pointer(it))
+	it := (*item)(unsafe.Pointer(ref))
 	it.reset()
 }
 

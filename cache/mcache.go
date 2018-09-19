@@ -235,7 +235,9 @@ func (c *Cache) Load(key string) (o Object, ok bool) {
 	return i.o, ok
 }
 
-func (c *Cache) evict(now TimeMs, force bool) (o Object, expired bool) {
+// Evict an expired - added before time "now" ms - entry
+// If "force" is true evict the entry even if not expired
+func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 	c.statistics.EvictCalled += 1
 	o, expired = 0, false
 	// If there is a race I will pick a removed entry or fail to pick anything
@@ -280,17 +282,4 @@ func (c *Cache) evict(now TimeMs, force bool) (o Object, expired bool) {
 
 func (c *Cache) GetStatistics() Statistics {
 	return *c.statistics
-}
-
-// Evict an expired - added before time "now" ms - entry
-// If "force" is true evict the entry even if not expired yet entry
-func (c *Cache) Evict(now int64, force bool) (o Object, expired bool, nextExpirationNs int64) {
-	nextExpirationNs = 0
-	o, expired = c.evict(now, force)
-	key, ok := c.fifo.pick()
-	if ok {
-		i := c.data[key]
-		nextExpirationNs = i.expirationNs - now
-	}
-	return o, expired, nextExpirationNs
 }
