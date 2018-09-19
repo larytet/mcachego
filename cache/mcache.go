@@ -1,6 +1,7 @@
 package mcache
 
 import (
+	"mcache/hashtable"
 	"runtime"
 	"sync"
 	_ "unsafe" // I need this for runtime.nanotime()
@@ -117,9 +118,9 @@ type Cache struct {
 	// Inside of the "item" I keep an address of the "item" allocated from a pool
 	// Insertion into the map[int]int is 20% faster than map[int]item :100ns vs 120ns
 	// The fastest in the benchmarks is map[string]uintptr
-	data  map[Key]item
-	mutex sync.RWMutex
-	ttl   int64
+	shards []*Hashtable
+	mutex  sync.RWMutex
+	ttl    int64
 	// FIFO of the items to support eviction of the expired entries
 	fifo       *itemFifo
 	size       int
@@ -136,8 +137,13 @@ func New(size int, shards int, ttl int64) *Cache {
 		shards = 2 * runtime.NumCPU()
 	}
 	c := new(Cache)
-	c.size, c.shards = size, shards
+	c.size = size
 	c.ttl = ns * ttl
+	c.shards = make([]Hashtable, shards, shards)
+	shardSize := size / shards
+	for i, _ := range c.shards {
+		c.shards[i] = hashtable.New(shardSize, 32)
+	}
 	c.Reset()
 	return c
 }
