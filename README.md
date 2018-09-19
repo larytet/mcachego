@@ -18,6 +18,10 @@ This is yet another Go cache. I need the fastest possible implementation with op
 	BenchmarkEvict-4   	50000000	       222 ns/op
 	BenchmarkAllocStoreEvictFree-4    	10000000	       358 ns/op	       0 B/op	       0 allocs/op
 
+	BenchmarkHashtableStore-4       	20000000	        99.9 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkHashtableLoad-4        	20000000	       165 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkMapStore-4             	10000000	       144 ns/op	       0 B/op	       0 allocs/op
+	BenchmarkRandomMemoryAccess-4   	50000000	        34.5 ns/op
 
 In the pprof the map API dominates the CPU consumption
 
