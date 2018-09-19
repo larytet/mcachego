@@ -9,19 +9,20 @@ import (
 
 // An alternative for Go runtime implemenation of map[string]uintptr
 // Requires to specify maximum number of hash collisions at the initialization time
-// Insert can fail if there are too many collisions
+// Insert fails if there are too many collisions
 // The goal is 3x improvement and true O(1) performance (what about data cache miss?)
 // See also:
 // * https://medium.com/@ConnorPeet/go-maps-are-not-o-1-91c1e61110bf
 // * https://github.com/larytet/emcpp/blob/master/src/HashTable.h
 
-// So far the performance is similar to the Go built-in map
+// So far the performance is ~30% better than the Go built-in map
 // For large tables - 100K+ items - random memory access dominates the performance
 // The idea is probably a dead end unless I introduce more constraints on the key distribution
 // My key is a domain name. There is not much special about domain names.
 // A domain name is a UTF-8 string which can be rather long (~100 bytes), but usually
 // (95%) is short (under 35 bytes) Popular domain names are very short, with specific
 // distribution of character pairs
+// I want popular domain names hit the same 4K memory page in the hashtable
 
 type Statistics struct {
 	Store            uint64
@@ -78,7 +79,7 @@ func (i *item) isSame(other *item) bool {
 }
 
 // This is by far the most expensive single line in the Load() flow
-// The line is responsible for 80% of the execution time
+// The line is responsible for 80% of the execution time in large hashtables
 // 'i' is a random address in a potentially very large hashtable
 func (i *item) inUse() bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
@@ -147,6 +148,9 @@ func (hc *hashContext) nextIndex() (index int) {
 }
 
 // Store a key:value pair in the hashtable
+// 'hash' can be xxhash.Sum64String(key)
+// You want the hash function to hit the same 4K memory page for most frequent lookups
+// This approach can potentially improve the peformance of the large hashtables by 50%-80%
 func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	h.statistics.Store += 1
 
@@ -295,6 +299,7 @@ func GetPower2(N int) int {
 // and source code https://github.com/skarupke/flat_hash_map/blob/master/flat_hash_map.hpp
 // This function shaves 10% off the Store() CPU consumption
 // Call to moduloSize() is 2x faster than a naive hash % size - 4ns vs 8ns
+// Can I do it faster by approximating the result?
 func moduloSize(hash uint64, size int) int {
 	switch size {
 	case 5087:
