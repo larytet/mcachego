@@ -2,7 +2,7 @@ package mcache
 
 import (
 	"github.com/cespare/xxhash"
-	"log"
+	//	"log"
 	"mcachego/hashtable"
 	"runtime"
 	"sync"
@@ -203,7 +203,6 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 	// A temporary variable helps to profile the code
 	i := item{o: o, expirationMs: now + c.ttl}
 	iValue := *((*uintptr)(unsafe.Pointer(&i)))
-	log.Printf("Store item %x %d %d", iValue, i.expirationMs, now)
 
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsMask
@@ -257,16 +256,16 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 		// I can save hashing if I keep the hash in the FIFO
 		if iValue, ok, ref := shard.table.Load(key, hash); ok {
 			i := (*item)(unsafe.Pointer(&iValue))
-			log.Printf("Pick item %x exp=%d now=%d", ref, i.expirationMs, now)
-			expired := ((i.expirationMs - now) < 0)
-			if expired || force {
+			isExpired := ((i.expirationMs - now) <= 0)
+			if isExpired || force {
 				c.statistics.EvictExpired += 1
 				if !expired {
 					c.statistics.EvictForce += 1
 				}
 				c.fifo.remove()
 				shard.table.RemoveByRef(ref)
-				o, expired = i.o, true
+				o = i.o
+				expired = true
 			} else {
 				c.statistics.EvictNotExpired += 1
 			}

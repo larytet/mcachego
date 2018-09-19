@@ -52,7 +52,6 @@ func TestAdd(t *testing.T) {
 func TestRemove(t *testing.T) {
 	smallCache.Reset()
 	start := GetTime()
-	t.Logf("GetTime returned start=%d", start)
 	smallCache.Store("0", 0, start)
 	_, evicted := smallCache.Evict(start, false)
 	if evicted {
@@ -60,8 +59,7 @@ func TestRemove(t *testing.T) {
 	}
 	time.Sleep(time.Second)
 	now := GetTime()
-	t.Logf("GetTime returned now=%d", now)
-	//	_, evicted = smallCache.Evict(now, false)
+	_, evicted = smallCache.Evict(now, false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
