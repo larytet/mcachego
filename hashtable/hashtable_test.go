@@ -61,13 +61,16 @@ func BenchmarkHashtableStore(b *testing.B) {
 	//b.N = 100 * 1000
 	h := New(2*b.N, 64)
 	keys := make([]string, b.N, b.N)
+	hashes := make([]uint64, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("%d", b.N-i)
+		key := fmt.Sprintf("%d", b.N-i)
+		keys[i] = key
+		hashes[i] = xxhash.Sum64String(key)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := keys[i]
-		if ok := h.Store(key, xxhash.Sum64String(key), uintptr(i)); !ok {
+		if ok := h.Store(key, hashes[i], uintptr(i)); !ok {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
@@ -80,19 +83,22 @@ func BenchmarkHashtableLoad(b *testing.B) {
 	//b.N = 100 * 1000
 	h := New(2*b.N, 64)
 	keys := make([]string, b.N, b.N)
+	hashes := make([]uint64, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("%d", b.N-i)
+		key := fmt.Sprintf("%d", b.N-i)
+		keys[i] = key
+		hashes[i] = xxhash.Sum64String(key)
 	}
 	for i := 0; i < b.N; i++ {
 		key := keys[i]
-		if ok := h.Store(key, xxhash.Sum64String(key), uintptr(i)); !ok {
+		if ok := h.Store(key, hashes[i], uintptr(i)); !ok {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := keys[i]
-		v, ok := h.Load(key, xxhash.Sum64String(key))
+		v, ok := h.Load(key, hashes[i])
 		if !ok {
 			b.Fatalf("Failed to find key %v in the hashtable", key)
 		}
