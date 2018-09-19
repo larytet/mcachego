@@ -201,7 +201,7 @@ func (c *Cache) Store(key Key, o Object, now TimeMs) bool {
 	// Trivial map[int32]int32 requires 90ns to add an entry
 	// What about a custom implementation of map? Can I do better than
 	// 120ns (400 CPU cycles)?
-	hash := xxhash.Sum64String(key)
+	hash := xxhash.Sum64String(string(key))
 	shard := hash % len(c.shards)
 	c.data[key] = i
 	ok := c.fifo.add(key)
