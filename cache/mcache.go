@@ -1,6 +1,7 @@
 package mcache
 
 import (
+	"github.com/cespare/xxhash"
 	"mcachego/hashtable"
 	"runtime"
 	"sync"
@@ -24,12 +25,16 @@ type Key string
 // The user is expected to allocate pointers from a pool like UnsafePool
 type Object uint32
 
+// Can be an offset from the beginning of the operation
+// or truncated result of Nanotime()
+type TimeMs int32
+
 // Straight from https://github.com/patrickmn/go-cache
 // Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
 // If I keep the item struct small I can avoid memory pools for items
 // I want a benchmark here: copy vs custom memory pool
 type item struct {
-	expirationNs uint32
+	expirationNs TimeMs
 	o            Object
 }
 
@@ -131,7 +136,7 @@ type shard struct {
 }
 
 type Cache struct {
-	ttl int64
+	ttl TimeMs
 	// FIFO of the items to support eviction of the expired entries
 	fifo       *itemFifo
 	size       int
@@ -139,17 +144,15 @@ type Cache struct {
 	statistics *Statistics
 }
 
-var ns = int64(1000 * 1000)
-
 // Create a new instance of Cache
 // If 'shards' is zero the table will use 2*runtime.NumCPU()
-func New(size int, shards int, ttl int64) *Cache {
+func New(size int, shards int, ttl TimeMs) *Cache {
 	if shards == 0 {
 		shards = 2 * runtime.NumCPU()
 	}
+	shards = hashtable.GetPower2(shards)
 	c := new(Cache)
-	c.size = size
-	c.ttl = ns * ttl
+	c.size, c.ttl = size, ttl
 	c.shards = make([]shard, shards, shards)
 	shardSize := size / shards
 	for _, shard := range c.shards {
@@ -181,7 +184,7 @@ func (c *Cache) Reset() {
 
 // Add an object to the cache
 // This is the single most expensive function in the code - 160ns/op
-func (c *Cache) Store(key Key, o Object, now int64) bool {
+func (c *Cache) Store(key Key, o Object, now TimeMs) bool {
 	// Create an entry on the stack, copy 128 bits
 	// These two lines of code add 20% overhead
 	// because I use map[int]item instead of map[int]int
@@ -198,6 +201,8 @@ func (c *Cache) Store(key Key, o Object, now int64) bool {
 	// Trivial map[int32]int32 requires 90ns to add an entry
 	// What about a custom implementation of map? Can I do better than
 	// 120ns (400 CPU cycles)?
+	hash := xxhash.Sum64String(key)
+	shard := hash % len(c.shards)
 	c.data[key] = i
 	ok := c.fifo.add(key)
 	count := uint64(len(c.data))

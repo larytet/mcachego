@@ -100,7 +100,7 @@ type Hashtable struct {
 
 func New(size int, maxCollisions int) (h *Hashtable) {
 	h = new(Hashtable)
-	// size = getPower2(size)
+	// size = GetPower2Sub1(size)
 	size = getSize(size)
 	//size = getPrime(size)
 	h.size = size
@@ -266,14 +266,21 @@ func (h *Hashtable) Collisions() int {
 // A real prime does not improve much
 // See https://stackoverflow.com/questions/21854191/generating-prime-numbers-in-go
 // https://github.com/agis/gofool/blob/master/atkin.go
-func getPower2(N int) int {
-	v := 1
-	res := 1
-	for i := 0; res < N; i++ {
-		v = v << 1
-		res = v - 1
-	}
-	return res
+// Better soluiton https://stackoverflow.com/questions/466204/rounding-up-to-next-power-of-2
+func GetPower2Sub1(N int) int {
+	return GetPower2(N) - 1
+}
+
+func GetPower2(N int) int {
+	N--
+	N |= N >> 1
+	N |= N >> 2
+	N |= N >> 4
+	N |= N >> 8
+	N |= N >> 16
+	N |= N >> 32
+	N++
+	return N
 }
 
 // I want a switch/case and division by const and let the compiler optimize modulo
@@ -704,5 +711,5 @@ func getSize(N int) int {
 			return p
 		}
 	}
-	return getPower2(N)
+	return GetPower2Sub1(N)
 }
