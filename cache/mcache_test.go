@@ -380,7 +380,7 @@ func BenchmarkStore(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
 	}
-	cache := New(b.N, 0, TTL)
+	cache := New(2*b.N, 0, TTL)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if ok := cache.Store(keys[i], Object(i), now); !ok {
