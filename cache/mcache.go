@@ -258,7 +258,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 		// I can save hashing if I keep the hash in the FIFO
 		if iValue, ok, ref := shard.table.Load(key, hash); ok {
 			i := (*item)(unsafe.Pointer(&iValue))
-			log.Printf("Pick item %x %d %d", ref, i.expirationMs, now)
+			log.Printf("Pick item %x exp=%d now=%d", ref, i.expirationMs, now)
 			expired := ((i.expirationMs - now) < 0)
 			if expired || force {
 				c.statistics.EvictExpired += 1
