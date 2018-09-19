@@ -112,19 +112,22 @@ type Statistics struct {
 	MaxOccupancy      uint64
 }
 
+// GC is going to poll the cache entries. I can try map[init]int and cast int to
+// a (unsafe?) pointer in the arrays of strings and structures.
+// Inside of the "item" I keep an address of the "item" allocated from a pool
+// Insertion into the map[int]int is 20% faster than map[int]item :100ns vs 120ns
+// The fastest in the benchmarks is map[string]uintptr
+type shard struct {
+	table *Hashtable
+	mutex sync.RWMutex
+}
+
 type Cache struct {
-	// GC is going to poll the cache entries. I can try map[init]int and cast int to
-	// a (unsafe?) pointer in the arrays of strings and structures.
-	// Inside of the "item" I keep an address of the "item" allocated from a pool
-	// Insertion into the map[int]int is 20% faster than map[int]item :100ns vs 120ns
-	// The fastest in the benchmarks is map[string]uintptr
-	shards []*Hashtable
-	mutex  sync.RWMutex
-	ttl    int64
+	ttl int64
 	// FIFO of the items to support eviction of the expired entries
 	fifo       *itemFifo
 	size       int
-	shards     int
+	shards     []shard
 	statistics *Statistics
 }
 
@@ -139,10 +142,10 @@ func New(size int, shards int, ttl int64) *Cache {
 	c := new(Cache)
 	c.size = size
 	c.ttl = ns * ttl
-	c.shards = make([]Hashtable, shards, shards)
+	c.shards = make([]shard, shards, shards)
 	shardSize := size / shards
-	for i, _ := range c.shards {
-		c.shards[i] = hashtable.New(shardSize, 32)
+	for _, shard := range c.shards {
+		shard.table = hashtable.New(shardSize, 32)
 	}
 	c.Reset()
 	return c
