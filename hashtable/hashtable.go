@@ -69,9 +69,7 @@ func (i *item) reset() {
 	i.value = 0
 }
 
-// This is by far the most expensive single line in the Load() flow
-// The line is responsible for 80% of the execution time
-// 'other' is an automatic variable
+// 'other' is usually an automatic variable
 // 'i' is a random address in the hashtable
 func (i *item) isSame(other *item) bool {
 	return i.inUse() && other.inUse() &&
@@ -79,6 +77,9 @@ func (i *item) isSame(other *item) bool {
 		(i.key == other.key)
 }
 
+// This is by far the most expensive single line in the Load() flow
+// The line is responsible for 80% of the execution time
+// 'i' is a random address in a potentially very large hashtable
 func (i *item) inUse() bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
 }
