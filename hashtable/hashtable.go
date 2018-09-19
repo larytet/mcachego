@@ -58,7 +58,7 @@ type item struct {
 	// hash of the key for quick compare
 	// I can set the IN_USE bit with atomic.compareAndSwap() and lock the entry
 	// I will need two bits LOCK and READY to avoid read of partial data
-	hash uint32
+	hash uint64
 	// Add padding for 64 bytes cache line?
 }
 

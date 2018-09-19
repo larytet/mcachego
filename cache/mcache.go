@@ -118,7 +118,7 @@ type Statistics struct {
 // Insertion into the map[int]int is 20% faster than map[int]item :100ns vs 120ns
 // The fastest in the benchmarks is map[string]uintptr
 type shard struct {
-	table *Hashtable
+	table *hashtable.Hashtable
 	mutex sync.RWMutex
 }
 
@@ -153,7 +153,7 @@ func New(size int, shards int, ttl int64) *Cache {
 
 // Occupancy
 func (c *Cache) Len() int {
-	return len(c.data)
+	return c.fifo.Len()
 }
 
 // Accomodations
