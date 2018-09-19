@@ -126,7 +126,7 @@ func TestAddCustomType(t *testing.T) {
 
 func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
-	cache := New(b.N, 0, TTL)
+	cache := New(2*b.N, 0, TTL)
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), b.N)
 	now := GetTime()
 	keys := make([]string, b.N, b.N)
