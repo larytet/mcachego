@@ -12,8 +12,8 @@ import (
 	"unsafe"
 )
 
-var TTL int64 = 10
-var smallCache = New(1, 0, int64(TTL))
+var TTL TimeMs = 10
+var smallCache = New(1, 0, TTL)
 
 func TestAdd(t *testing.T) {
 	itemSize := unsafe.Sizeof(*new(item))
