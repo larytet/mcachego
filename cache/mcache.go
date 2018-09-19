@@ -5,11 +5,8 @@ import (
 	"mcachego/hashtable"
 	"runtime"
 	"sync"
-	_ "unsafe" // I need this for runtime.nanotime()
+	"unsafe" // I need this for runtime.nanotime()
 )
-
-// a string key and int32 key have roughly the same benchmarks (!?)
-type Key string
 
 // I have three choices here:
 //  * Allow the user to specify Object type
@@ -41,13 +38,13 @@ type item struct {
 type itemFifo struct {
 	head int
 	tail int
-	data []Key
+	data []string
 	size int
 }
 
 func newFifo(size int) *itemFifo {
 	s := new(itemFifo)
-	s.data = make([]Key, size+1, size+1)
+	s.data = make([]string, size+1, size+1)
 	s.size = size
 	s.head = 0
 	s.tail = 0
@@ -63,7 +60,7 @@ func (s *itemFifo) inc(v int) int {
 	return v
 }
 
-func (s *itemFifo) add(key Key) (ok bool) {
+func (s *itemFifo) add(key string) (ok bool) {
 	newTail := s.inc(s.tail)
 	if s.head != newTail {
 		s.data[s.tail] = key
@@ -74,7 +71,7 @@ func (s *itemFifo) add(key Key) (ok bool) {
 	}
 }
 
-func (s *itemFifo) remove() (key Key, ok bool) {
+func (s *itemFifo) remove() (key string, ok bool) {
 	newHead := s.inc(s.head)
 	if s.head != s.tail {
 		key = s.data[s.head]
@@ -85,7 +82,7 @@ func (s *itemFifo) remove() (key Key, ok bool) {
 	}
 }
 
-func (s *itemFifo) peek() (key Key, ok bool) {
+func (s *itemFifo) peek() (key string, ok bool) {
 	if s.head != s.tail {
 		key = s.data[s.head]
 		return key, true
@@ -186,7 +183,7 @@ func (c *Cache) Reset() {
 
 // Add an object to the cache
 // This is the single most expensive function in the code - 160ns/op
-func (c *Cache) Store(key Key, o Object, now TimeMs) bool {
+func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 	// Create an entry on the stack, copy 128 bits
 	// These two lines of code add 20% overhead
 	// because I use map[int]item instead of map[int]int
@@ -198,6 +195,7 @@ func (c *Cache) Store(key Key, o Object, now TimeMs) bool {
 
 	// A temporary variable helps to profile the code
 	i := item{o: o, expirationNs: now + c.ttl}
+	iValue := *((*uintptr)(unsafe.Pointer(&i)))
 
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsCount
@@ -208,7 +206,7 @@ func (c *Cache) Store(key Key, o Object, now TimeMs) bool {
 	// What about a custom implementation of map? Can I do better than
 	// 120ns (400 CPU cycles)?
 	shard.mutex.Lock()
-	shard.table.Store(key, o)
+	shard.table.Store(key, hash, iValue)
 	ok := c.fifo.add(key)
 	count := c.fifo.Len()
 	shard.mutex.Unlock()
@@ -220,7 +218,7 @@ func (c *Cache) Store(key Key, o Object, now TimeMs) bool {
 }
 
 // Lookup in the cache
-func (c *Cache) Load(key Key) (o Object, ok bool) {
+func (c *Cache) Load(key string) (o Object, ok bool) {
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsCount
 	shard := &c.shards[shardIdx]
