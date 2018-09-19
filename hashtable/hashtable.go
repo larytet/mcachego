@@ -189,9 +189,9 @@ func (h *Hashtable) Store(key string, hash uintptr, value uintptr) bool {
 	return false
 }
 
-func (h *Hashtable) find(key string) (index int, collisions int, chainStart int, ok bool) {
+func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, chainStart int, ok bool) {
 	hc := hashContext{it: item{key: key}, size: h.size}
-	index = hc.nextIndex()
+	index = hc.firstIndex(hash)
 	chainStart = index
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
@@ -212,7 +212,7 @@ func (h *Hashtable) find(key string) (index int, collisions int, chainStart int,
 // Can I assume that Load() is more frequent than Store()?
 func (h *Hashtable) Load(key string, hash uintptr) (value uintptr, ok bool) {
 	h.statistics.Load += 1
-	if index, collisions, chainStart, ok := h.find(key); ok {
+	if index, collisions, chainStart, ok := h.find(key, hash); ok {
 		h.statistics.LoadSuccess += 1
 		it := h.data[index]
 		// Swap the found item with the first in the "chain" and improve lookup next time
@@ -231,7 +231,7 @@ func (h *Hashtable) Load(key string, hash uintptr) (value uintptr, ok bool) {
 
 func (h *Hashtable) Remove(key string, hash uintptr) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
-	if index, collisions, _, ok := h.find(key); ok {
+	if index, collisions, _, ok := h.find(key, hash); ok {
 		h.statistics.RemoveSuccess += 1
 		if collisions > 0 {
 			h.collisions -= 1
