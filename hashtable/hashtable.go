@@ -4,6 +4,7 @@ import (
 	//	"encoding/binary"
 	"log"
 	"sync"
+	"unsafe"
 )
 
 // An alternative for Go runtime implemenation of map[string]uintptr
@@ -209,23 +210,29 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 
 // Find the key in the table, return the object
 // Can I assume that Load() is more frequent than Store()?
-func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool) {
+// 'ref' can be used in the subsequent Remove() and save lookup
+func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uintptr) {
 	h.statistics.Load += 1
 	if index, collisions, chainStart, ok := h.find(key, hash); ok {
 		h.statistics.LoadSuccess += 1
-		it := h.data[index]
+		it := &h.data[index]
 		// Swap the found item with the first in the "chain" and improve lookup next time
 		// due to CPU caching
 		if collisions > 0 {
 			h.data[index] = h.data[chainStart]
-			h.data[chainStart] = it
+			h.data[chainStart] = *it
 			h.statistics.LoadSwap += 1
 		}
 		value = it.value
-		return value, true
+		return value, true, uintptr(unsafe.Pointer(it))
 	}
 	h.statistics.LoadFailed += 1
-	return 0, false
+	return 0, false, 0
+}
+
+func (h *Hashtable) RemoveByRef(ref uintptr) {
+	it := (*item)(unsafe.Pointer(it))
+	it.reset()
 }
 
 func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {

@@ -228,14 +228,14 @@ func (c *Cache) Load(key string) (o Object, ok bool) {
 	shard := &c.shards[shardIdx]
 
 	shard.mutex.RLock()
-	iValue, ok := shard.table.Load(key, hash)
+	iValue, ok, _ := shard.table.Load(key, hash)
 	shard.mutex.RUnlock()
 
 	i := (*item)(unsafe.Pointer(iValue))
 	return i.o, ok
 }
 
-func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
+func (c *Cache) evict(now TimeMs, force bool) (o Object, expired bool) {
 	c.statistics.EvictCalled += 1
 	o, expired = 0, false
 	// If there is a race I will pick a removed entry or fail to pick anything
@@ -245,9 +245,12 @@ func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
 		hash := xxhash.Sum64String(string(key))
 		shardIdx := hash & c.shardsCount
 		shard := &c.shards[shardIdx]
+
 		shard.mutex.Lock()
+
 		// I can save hashing if I keep the hash in the FIFO
-		if i, ok := shard.table.Load(key, hash); ok {
+		if iValue, ok, ref := shard.table.Load(key, hash); ok {
+			i := (*item)(unsafe.Pointer(iValue))
 			expired := ((i.expirationNs - now) < 0)
 			if expired || force {
 				c.statistics.EvictExpired += 1
@@ -255,8 +258,7 @@ func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
 					c.statistics.EvictForce += 1
 				}
 				c.fifo.remove()
-				delete(c.data, key)
-				shard.mutex.Unlock()
+				shard.table.RemoveByRef(ref)
 				o, expired = i.o, true
 			} else {
 				c.statistics.EvictNotExpired += 1
@@ -266,6 +268,7 @@ func (c *Cache) evict(now int64, force bool) (o Object, expired bool) {
 			// memory leak?
 			c.statistics.EvictLookupFailed += 1
 		}
+
 		shard.mutex.Unlock()
 	} else {
 		// Probably expiration FIFO is empty - nothing to do
