@@ -185,7 +185,7 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 			index = hc.nextIndex()
 		}
 	}
-	log.Printf("Failed to add %v:%v, col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hc.it.hash, h.size)
+	log.Printf("Failed to add '%v':'%v', col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hc.it.hash, h.size)
 	return false
 }
 

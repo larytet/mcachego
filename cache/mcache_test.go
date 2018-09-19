@@ -131,7 +131,7 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	now := GetTime()
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", b.N-i)
+		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
 	}
 	b.ResetTimer()
 
@@ -297,7 +297,7 @@ func BenchmarkMapStringStoreLookup(b *testing.B) {
 	m := make(map[string]uintptr, mapSize)
 	keys := make([]string, mapSize, mapSize)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", mapSize-i)
+		keys[i] = fmt.Sprintf("000000-%d", mapSize-i)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -321,7 +321,7 @@ func BenchmarkStackAllocationMapString(b *testing.B) {
 	m := make(map[string]mapItem, mapSize)
 	keys := make([]string, mapSize, mapSize)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", mapSize-i)
+		keys[i] = fmt.Sprintf("000000-%d", mapSize-i)
 	}
 	b.ResetTimer()
 
@@ -378,7 +378,7 @@ func BenchmarkStore(b *testing.B) {
 	now := GetTime()
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", b.N-i)
+		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
 	}
 	cache := New(b.N, 0, TTL)
 	b.ResetTimer()

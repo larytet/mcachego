@@ -161,7 +161,7 @@ func New(size int, shards int, ttl TimeMs) *Cache {
 	c.shardsMask = uint64(len(c.shards)) - 1
 	shardSize := size / shards
 	for i, _ := range c.shards {
-		c.shards[i].table = hashtable.New(shardSize, 32)
+		c.shards[i].table = hashtable.New(shardSize, 64)
 	}
 	c.Reset()
 	return c
