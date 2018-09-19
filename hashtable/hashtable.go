@@ -2,7 +2,6 @@ package hashtable
 
 import (
 	//	"encoding/binary"
-	"github.com/cespare/xxhash"
 	"log"
 	"sync"
 )
@@ -133,7 +132,6 @@ type hashContext struct {
 // Collision attack is possible here
 // I should rotate hash functions
 // See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
-// Usage firstIndex(xxhash.Sum64String(key))
 func (hc *hashContext) firstIndex(hash uint64) (index int) {
 	hc.it.hash = hash | ITEM_IN_USE_MASK
 	// The modulo 'hash % hc.size' consumes 50% of the function if the table fits L3 cache
@@ -148,7 +146,7 @@ func (hc *hashContext) nextIndex() (index int) {
 }
 
 // Store a key:value pair in the hashtable
-func (h *Hashtable) Store(key string, hash uintptr, value uintptr) bool {
+func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	h.statistics.Store += 1
 
 	hc := hashContext{it: item{key: key}, size: h.size}
@@ -210,7 +208,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 
 // Find the key in the table, return the object
 // Can I assume that Load() is more frequent than Store()?
-func (h *Hashtable) Load(key string, hash uintptr) (value uintptr, ok bool) {
+func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool) {
 	h.statistics.Load += 1
 	if index, collisions, chainStart, ok := h.find(key, hash); ok {
 		h.statistics.LoadSuccess += 1
@@ -229,7 +227,7 @@ func (h *Hashtable) Load(key string, hash uintptr) (value uintptr, ok bool) {
 	return 0, false
 }
 
-func (h *Hashtable) Remove(key string, hash uintptr) (value uintptr, ok bool) {
+func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
 	if index, collisions, _, ok := h.find(key, hash); ok {
 		h.statistics.RemoveSuccess += 1
