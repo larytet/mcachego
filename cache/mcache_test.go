@@ -23,7 +23,7 @@ func TestAdd(t *testing.T) {
 	if smallCache.Len() != 0 {
 		t.Fatalf("Cache is not empty %d", smallCache.Len())
 	}
-	smallCache.Store("0", 0, Nanotime())
+	smallCache.Store("0", 0, GetTime())
 	v, ok := smallCache.Load("0")
 	if !ok {
 		t.Fatalf("Failed to load value from the cache")
@@ -38,14 +38,14 @@ func TestAdd(t *testing.T) {
 
 func TestRemove(t *testing.T) {
 	smallCache.Reset()
-	start := Nanotime()
+	start := GetTime()
 	smallCache.Store("0", 0, start)
 	_, evicted := smallCache.Evict(start, false)
 	if evicted {
 		t.Fatalf("Evicted entry before it expired")
 	}
 	time.Sleep(time.Second)
-	_, evicted = smallCache.Evict(Nanotime(), false)
+	_, evicted = smallCache.Evict(GetTime(), false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
@@ -54,7 +54,7 @@ func TestRemove(t *testing.T) {
 		t.Fatalf("Failed to remove value from the cache")
 	}
 
-	_, evicted = smallCache.Evict(Nanotime(), false)
+	_, evicted = smallCache.Evict(GetTime(), false)
 	if evicted {
 		t.Fatalf("Evicted from empty cache")
 	}
@@ -62,10 +62,10 @@ func TestRemove(t *testing.T) {
 
 func TestOverflow(t *testing.T) {
 	smallCache.Reset()
-	if ok := smallCache.Store("0", 0, Nanotime()); !ok {
+	if ok := smallCache.Store("0", 0, GetTime()); !ok {
 		t.Fatalf("Failed to store value in the cache")
 	}
-	if ok := smallCache.Store("0", 0, Nanotime()); ok {
+	if ok := smallCache.Store("0", 0, GetTime()); ok {
 		t.Fatalf("Did not fail on overflow")
 	}
 }
@@ -85,9 +85,9 @@ func TestAddCustomType(t *testing.T) {
 	myData.a = 1
 	myData.b = 2
 
-	smallCache.Store("0", Object(uintptr(ptr)-pool.GetBase()), Nanotime())
+	smallCache.Store("0", Object(uintptr(ptr)-pool.GetBase()), GetTime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
-	o, evicted := smallCache.Evict(Nanotime(), false)
+	o, evicted := smallCache.Evict(GetTime(), false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
@@ -114,7 +114,7 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
 	cache := New(b.N, 0, TTL)
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), b.N)
-	now := Nanotime()
+	now := GetTime()
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("000000  %d", b.N-i)
@@ -190,7 +190,7 @@ func BenchmarkPoolAlloc(b *testing.B) {
 }
 
 func BenchmarkStackAllocationMap(b *testing.B) {
-	now := Nanotime()
+	now := GetTime()
 	mapSize := 10 * 1000 * 1000
 	b.ReportAllocs()
 	b.N = mapSize
@@ -361,7 +361,7 @@ func BenchmarkXxhashSum64String(b *testing.B) {
 // 150ns cache.Store()
 func BenchmarkStore(b *testing.B) {
 	b.ReportAllocs()
-	now := Nanotime()
+	now := GetTime()
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("000000  %d", b.N-i)
