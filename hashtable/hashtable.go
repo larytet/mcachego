@@ -135,8 +135,8 @@ type hashContext struct {
 // See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 func (hc *hashContext) firstIndex(hash uint64) (index int) {
 	hc.it.hash = hash | ITEM_IN_USE_MASK
-	// The modulo 'hash % hc.size' consumes 50% of the function if the table fits L3 cache
-	// and 20% of the function for large tables
+	// The modulo 'hash % hc.size' consumes 50% of the lookup function if the table fits L3 cache
+	// and 20% of the function for large tables. I need any help I can get here
 	hc.index = moduloSize(hash, hc.size)
 	return hc.index
 }
@@ -294,6 +294,7 @@ func GetPower2(N int) int {
 // See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 // and source code https://github.com/skarupke/flat_hash_map/blob/master/flat_hash_map.hpp
 // This function shaves 10% off the Store() CPU consumption
+// Call to moduloSize() is 2x faster than a naive hash % size - 4ns vs 8ns
 func moduloSize(hash uint64, size int) int {
 	switch size {
 	case 5087:

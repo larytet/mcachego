@@ -12,7 +12,8 @@ import (
 // I have three choices here:
 //  * Allow the user to specify Object type
 //  * Use type Object interface{}
-//  * Use uintptr() (truncated to 32 bits) to the user defined structures
+//  * Use uintptr() (truncated to "enough for anybody" 32 bits) to the user defined structures
+// 32 bits is not a mistake here, but a sad necessity allowing to reduce data cache miss
 // Without generics I will need a separate cache for every user type
 // If I use a type safe and GC safe interface{}, somewhere up the stack somebody will have to type assert Object
 // and pay 20ns per Load()
@@ -25,89 +26,12 @@ type Object uint32
 
 // Can be an offset from the beginning of the operation
 // or truncated result of Nanotime()
+// I would use 16 bits if only I could
 type TimeMs int32
 
-// Straight from https://github.com/patrickmn/go-cache
-// Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
-// If I keep the item struct small I can avoid memory pools for items
-// I want a benchmark here: copy vs custom memory pool
-type item struct {
-	expirationMs TimeMs
-	o            Object
-}
-
-type itemFifo struct {
-	head int
-	tail int
-	data []string
-	size int
-}
-
-func newFifo(size int) *itemFifo {
-	s := new(itemFifo)
-	s.data = make([]string, size+1, size+1)
-	s.size = size
-	s.head = 0
-	s.tail = 0
-	return s
-}
-
-func (s *itemFifo) inc(v int) int {
-	if v < s.size {
-		v += 1
-	} else {
-		v = 0
-	}
-	return v
-}
-
-func (s *itemFifo) add(key string) (ok bool) {
-	newTail := s.inc(s.tail)
-	if s.head != newTail {
-		s.data[s.tail] = key
-		s.tail = newTail
-		return true
-	} else {
-		return false
-	}
-}
-
-func (s *itemFifo) remove() (key string, ok bool) {
-	newHead := s.inc(s.head)
-	if s.head != s.tail {
-		key = s.data[s.head]
-		s.head = newHead
-		return key, true
-	} else {
-		return key, false
-	}
-}
-
-// I assume that this API is "reasonably" tread safe. Will not cause
-// problems if there is a race
-// s.head is modified by remove() and is an atomic operation
-// I do not care about valifity of s.tai
-func (s *itemFifo) pick() (key string, ok bool) {
-	if s.head != s.tail {
-		key = s.data[s.head]
-		return key, true
-	} else {
-		return key, false
-	}
-}
-
-func (s *itemFifo) Len() int {
-	if s.head <= s.tail {
-		return s.tail - s.head
-	} else {
-		return s.size - s.head + s.tail
-	}
-}
-
-//go:noescape
-//go:linkname nanotime runtime.nanotime
-func nanotime() int64
-
+// Application is expected to call this function to get "now". The cache API itself does
+// not perform any time related calls. Application can call GetTime only once for a
+// a bunch of operations
 // time.Now() is 45ns, runtime.nanotime is 20ns
 // I can not create an exported symbol with //go:linkname
 // I need a wrapper
@@ -116,26 +40,6 @@ func nanotime() int64
 func GetTime() TimeMs {
 	res := TimeMs(uint64(nanotime()) / (1000 * 1000))
 	return res
-}
-
-type Statistics struct {
-	EvictCalled       uint64
-	EvictExpired      uint64
-	EvictForce        uint64
-	EvictNotExpired   uint64
-	EvictLookupFailed uint64
-	EvictPeekFailed   uint64
-	MaxOccupancy      uint64
-}
-
-// GC is going to poll the cache entries. I can try map[init]int and cast int to
-// a (unsafe?) pointer in the arrays of strings and structures.
-// Inside of the "item" I keep an address of the "item" allocated from a pool
-// Insertion into the map[int]int is 20% faster than map[int]item :100ns vs 120ns
-// The fastest in the benchmarks is map[string]uintptr
-type shard struct {
-	table *hashtable.Hashtable
-	mutex sync.RWMutex
 }
 
 type Configuration struct {
@@ -155,6 +59,16 @@ type Cache struct {
 	shardsMask    uint64
 	statistics    *Statistics
 	configuration Configuration
+}
+
+type Statistics struct {
+	EvictCalled       uint64
+	EvictExpired      uint64
+	EvictForce        uint64
+	EvictNotExpired   uint64
+	EvictLookupFailed uint64
+	EvictPeekFailed   uint64
+	MaxOccupancy      uint64
 }
 
 // Create a new instance of Cache
@@ -304,4 +218,96 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 
 func (c *Cache) GetStatistics() Statistics {
 	return *c.statistics
+}
+
+// Straight from https://github.com/patrickmn/go-cache
+// Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
+// If I keep the item struct small I can avoid memory pools for items
+// The benchmark is clear here: copy of a small object is better than allocation
+// from a pool and copy the pointer.
+type item struct {
+	expirationMs TimeMs
+	o            Object
+}
+
+type itemFifo struct {
+	head int
+	tail int
+	data []string
+	size int
+}
+
+func newFifo(size int) *itemFifo {
+	s := new(itemFifo)
+	s.data = make([]string, size+1, size+1)
+	s.size = size
+	s.head = 0
+	s.tail = 0
+	return s
+}
+
+func (s *itemFifo) inc(v int) int {
+	if v < s.size {
+		v += 1
+	} else {
+		v = 0
+	}
+	return v
+}
+
+func (s *itemFifo) add(key string) (ok bool) {
+	newTail := s.inc(s.tail)
+	if s.head != newTail {
+		s.data[s.tail] = key
+		s.tail = newTail
+		return true
+	} else {
+		return false
+	}
+}
+
+func (s *itemFifo) remove() (key string, ok bool) {
+	newHead := s.inc(s.head)
+	if s.head != s.tail {
+		key = s.data[s.head]
+		s.head = newHead
+		return key, true
+	} else {
+		return key, false
+	}
+}
+
+// I assume that this API is "reasonably" tread safe. Will not cause
+// problems if there is a race
+// s.head is modified by remove() and is an atomic operation
+// I do not care about valifity of s.tai
+func (s *itemFifo) pick() (key string, ok bool) {
+	if s.head != s.tail {
+		key = s.data[s.head]
+		return key, true
+	} else {
+		return key, false
+	}
+}
+
+func (s *itemFifo) Len() int {
+	if s.head <= s.tail {
+		return s.tail - s.head
+	} else {
+		return s.size - s.head + s.tail
+	}
+}
+
+//go:noescape
+//go:linkname nanotime runtime.nanotime
+func nanotime() int64
+
+// GC is going to poll the cache entries. I can try map[init]int and cast int to
+// a (unsafe?) pointer in the arrays of strings and structures.
+// Inside of the "item" I keep an address of the "item" allocated from a pool
+// Insertion into the map[int]int is 20% faster than map[int]item :100ns vs 120ns
+// The fastest in the benchmarks is map[string]uintptr
+type shard struct {
+	table *hashtable.Hashtable
+	mutex sync.RWMutex
 }

@@ -27,12 +27,15 @@ func TestGetTime(t *testing.T) {
 	}
 }
 
-func TestAdd(t *testing.T) {
-	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
+func TestItemSize(t *testing.T) {
 	itemSize := unsafe.Sizeof(*new(item))
 	if itemSize != 8 {
 		t.Fatalf("Cache item size %d is not 64 bits", itemSize)
 	}
+}
+
+func TestAdd(t *testing.T) {
+	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
 	if smallCache.Len() != 0 {
 		t.Fatalf("Cache is not empty %d", smallCache.Len())
 	}

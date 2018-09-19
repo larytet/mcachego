@@ -151,3 +151,38 @@ func BenchmarkRandomMemoryAccess(b *testing.B) {
 	b.StopTimer()
 	b.Logf("InUse %d", inUseCount)
 }
+
+func BenchmarkModuloSize(b *testing.B) {
+	array := make([]uint64, b.N, b.N)
+	prng := xorshift64star.New(1)
+	for i := 0; i < b.N; i++ {
+		array[i] = prng.Next()
+	}
+	size := getSize(10 * 1000 * 1000)
+	var result int
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		result = moduloSize(array[i], size)
+	}
+	if result <= 0 {
+		b.Fatalf("Got bad modulo result %d", result)
+	}
+
+}
+
+func BenchmarkModulo(b *testing.B) {
+	array := make([]uint64, b.N, b.N)
+	prng := xorshift64star.New(1)
+	for i := 0; i < b.N; i++ {
+		array[i] = prng.Next()
+	}
+	size := getSize(10 * 1000 * 1000)
+	var result int
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		result = int(array[i] % uint64(size))
+	}
+	if result <= 0 {
+		b.Fatalf("Got bad modulo result %d", result)
+	}
+}
