@@ -89,6 +89,14 @@ func (s *itemFifo) peek() (key Key, ok bool) {
 	}
 }
 
+func (s *itemFifo) Len() int {
+	if s.head <= s.tail {
+		return s.tail - s.head
+	} else {
+		return s.size - s.head + s.tail
+	}
+}
+
 //go:noescape
 //go:linkname nanotime runtime.nanotime
 func nanotime() int64
@@ -162,10 +170,12 @@ func (c *Cache) Size() int {
 }
 
 func (c *Cache) Reset() {
-	// Probably faster and more reliable to allocate everything
+	// Probably faster and more reliable is to allocate everything
 	// than try to call delete()
 	c.fifo = newFifo(c.size)
-	c.data = make(map[Key]item, c.size)
+	for _, shard := range c.shards {
+		shard.table.Reset()
+	}
 	c.statistics = new(Statistics)
 }
 
