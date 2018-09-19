@@ -23,6 +23,9 @@ func TestGetTime(t *testing.T) {
 	if t1-t0 < 1000 {
 		t.Fatalf("Sleep is shorter than expected %d", d)
 	}
+	if t1-t0 > 1001 {
+		t.Fatalf("Sleep is longer than expected %d", d)
+	}
 }
 
 func TestAdd(t *testing.T) {
