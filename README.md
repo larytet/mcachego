@@ -2,6 +2,7 @@
 
 This is yet another Go cache. I need the fastest possible implementation with optional synchronizaton. 
 
+* Target DNS servers and domain names lookup
 * Carefully avoid allocations from the heap in the Store()/Load() API
 * Use runtime.nanotime()
 * Synchronisation is optional
@@ -41,6 +42,12 @@ The Cache API is a thin wrapper around Go map[int32]int32 and an expiration queu
 See TestAddCustomType() for usage.
 
 
+## ToDo
+
+I want the hash function to cluster for most popular keys. The idea is that popular lookups can fit a single 4K memory page and rarely trigger a data cache miss.
+The simplest way to do this is to keep a small hashtable (cache) for the popular lookups. I can run two lookups - in the main and 
+large table and in the small cache. The small cache can implement a very simple and fast hash function. For example, use 2 first characters as a hash
+
 ## Similar projects 
 
 * https://github.com/patrickmn/go-cache
@@ -61,3 +68,4 @@ See TestAddCustomType() for usage.
 * https://dzone.com/articles/so-you-wanna-go-fast
 * https://www.youtube.com/watch?time_continue=2&v=ncHmEUmJZf4
 * https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
+* http://www.cs.cornell.edu/courses/cs3110/2008fa/lectures/lec21.html

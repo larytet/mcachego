@@ -149,7 +149,8 @@ func (hc *hashContext) nextIndex() (index int) {
 
 // Store a key:value pair in the hashtable
 // 'hash' can be xxhash.Sum64String(key)
-// You want the hash function to hit the same 4K memory page for most frequent lookups
+// You want the hash function to hit the same 4K memory page for most frequent lookups.
+// You want "clustering" for a few keys, and uniform distribution for most keys.
 // This approach can potentially improve the peformance of the large hashtables by 50%-80%
 func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	h.statistics.Store += 1
