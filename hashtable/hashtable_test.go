@@ -2,29 +2,33 @@ package hashtable
 
 import (
 	"fmt"
+	"github.com/cespare/xxhash"
 	"mcachego/xorshift64star"
 	"testing"
 	"unsafe"
 )
 
 func TestHashtable(t *testing.T) {
-	t.Logf("Size of hashtable item %d", unsafe.Sizeof(*new(item)))
+	itemSize := unsafe.Sizeof(*new(item))
+	if itemSize%8 != 0 {
+		t.Fatalf("Hashtable item size %d is not alligned", itemSize)
+	}
 	size := 10
 	h := New(2*size, 4)
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
-		ok := h.Store(key, uintptr(i))
+		ok := h.Store(key, xxhash.Sum64String(key), uintptr(i))
 		if !ok {
 			t.Fatalf("Failed to store value %v in the hashtable", i)
 		}
 	}
-	ok := h.Store("0", uintptr(0))
+	ok := h.Store("0", xxhash.Sum64String("0"), uintptr(0))
 	if ok {
 		t.Fatalf("Added same key to the hashtable")
 	}
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
-		v, ok := h.Load(key)
+		v, ok, _ := h.Load(key, xxhash.Sum64String(key))
 		if !ok {
 			t.Fatalf("Failed to find key %v in the hashtable", key)
 		}
@@ -34,7 +38,7 @@ func TestHashtable(t *testing.T) {
 	}
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
-		v, ok := h.Remove(key)
+		v, ok := h.Remove(key, xxhash.Sum64String(key))
 		if !ok {
 			t.Fatalf("Failed to remove key %v from the hashtable", key)
 		}
@@ -44,7 +48,7 @@ func TestHashtable(t *testing.T) {
 	}
 	for i := 0; i < size; i++ {
 		key := fmt.Sprintf("%d", i)
-		v, ok := h.Load(key)
+		v, ok, _ := h.Load(key, xxhash.Sum64String(key))
 		if ok {
 			t.Fatalf("Found key %v in the empty hashtable", key)
 		}
@@ -60,13 +64,16 @@ func BenchmarkHashtableStore(b *testing.B) {
 	//b.N = 100 * 1000
 	h := New(2*b.N, 64)
 	keys := make([]string, b.N, b.N)
+	hashes := make([]uint64, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("%d", b.N-i)
+		key := fmt.Sprintf("%d", b.N-i)
+		keys[i] = key
+		hashes[i] = xxhash.Sum64String(key)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := keys[i]
-		if ok := h.Store(key, uintptr(i)); !ok {
+		if ok := h.Store(key, hashes[i], uintptr(i)); !ok {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
@@ -79,19 +86,22 @@ func BenchmarkHashtableLoad(b *testing.B) {
 	//b.N = 100 * 1000
 	h := New(2*b.N, 64)
 	keys := make([]string, b.N, b.N)
+	hashes := make([]uint64, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("%d", b.N-i)
+		key := fmt.Sprintf("%d", b.N-i)
+		keys[i] = key
+		hashes[i] = xxhash.Sum64String(key)
 	}
 	for i := 0; i < b.N; i++ {
 		key := keys[i]
-		if ok := h.Store(key, uintptr(i)); !ok {
+		if ok := h.Store(key, hashes[i], uintptr(i)); !ok {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := keys[i]
-		v, ok := h.Load(key)
+		v, ok, _ := h.Load(key, hashes[i])
 		if !ok {
 			b.Fatalf("Failed to find key %v in the hashtable", key)
 		}

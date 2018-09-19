@@ -12,14 +12,32 @@ import (
 	"unsafe"
 )
 
-var TTL int64 = 10
-var smallCache = New(1, int64(TTL))
+var TTL TimeMs = 10
+
+var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
+
+func TestGetTime(t *testing.T) {
+	t0 := GetTime()
+	time.Sleep(time.Second)
+	t1 := GetTime()
+	d := t1 - t0
+	if t1-t0 < 1000 {
+		t.Fatalf("Sleep is shorter than expected %d", d)
+	}
+	if t1-t0 > 1001 {
+		t.Fatalf("Sleep is longer than expected %d", d)
+	}
+}
 
 func TestAdd(t *testing.T) {
+	itemSize := unsafe.Sizeof(*new(item))
+	if itemSize != 8 {
+		t.Fatalf("Cache item size %d is not 64 bits", itemSize)
+	}
 	if smallCache.Len() != 0 {
 		t.Fatalf("Cache is not empty %d", smallCache.Len())
 	}
-	smallCache.Store("0", 0, nanotime())
+	smallCache.Store("0", 0, GetTime())
 	v, ok := smallCache.Load("0")
 	if !ok {
 		t.Fatalf("Failed to load value from the cache")
@@ -34,44 +52,35 @@ func TestAdd(t *testing.T) {
 
 func TestRemove(t *testing.T) {
 	smallCache.Reset()
-	start := nanotime()
+	start := GetTime()
 	smallCache.Store("0", 0, start)
-	_, evicted, nextExpiration := smallCache.Evict(start, false)
+	_, evicted := smallCache.Evict(start, false)
 	if evicted {
 		t.Fatalf("Evicted entry before it expired")
 	}
-	expectedNextExpiration := ns * TTL
-	if nextExpiration != expectedNextExpiration {
-		t.Fatalf("Expected %d, got %d", expectedNextExpiration, nextExpiration)
-	}
 	time.Sleep(time.Second)
-	_, evicted, nextExpiration = smallCache.Evict(Nanotime(), false)
+	now := GetTime()
+	_, evicted = smallCache.Evict(now, false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
-	}
-	if nextExpiration != 0 {
-		t.Fatalf("bad next expiration %v", nextExpiration)
 	}
 	_, ok := smallCache.Load("0")
 	if ok {
 		t.Fatalf("Failed to remove value from the cache")
 	}
 
-	_, evicted, nextExpiration = smallCache.Evict(Nanotime(), false)
+	_, evicted = smallCache.Evict(now, false)
 	if evicted {
 		t.Fatalf("Evicted from empty cache")
-	}
-	if nextExpiration != 0 {
-		t.Fatalf("bad next expiration %v, should be zero", nextExpiration)
 	}
 }
 
 func TestOverflow(t *testing.T) {
 	smallCache.Reset()
-	if ok := smallCache.Store("0", 0, nanotime()); !ok {
+	if ok := smallCache.Store("0", 0, GetTime()); !ok {
 		t.Fatalf("Failed to store value in the cache")
 	}
-	if ok := smallCache.Store("0", 0, nanotime()); ok {
+	if ok := smallCache.Store("0", 0, GetTime()); ok {
 		t.Fatalf("Did not fail on overflow")
 	}
 }
@@ -87,29 +96,25 @@ func TestAddCustomType(t *testing.T) {
 	if !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
 	}
-	t.Logf("Allocated %p", ptr)
-
 	myData := (*MyData)(ptr)
 	myData.a = 1
 	myData.b = 2
 
-	smallCache.Store("0", Object(ptr), Nanotime())
+	smallCache.Store("0", Object(uintptr(ptr)-pool.GetBase()), GetTime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
-	o, evicted, nextExpiration := smallCache.Evict(Nanotime(), false)
+	o, evicted := smallCache.Evict(GetTime(), false)
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
-	if nextExpiration != 0 {
-		t.Fatalf("bad next expiration %v", nextExpiration)
-	}
-	myData = (*MyData)(unsafe.Pointer(o))
+	oAddress := unsafe.Pointer(uintptr(o) + pool.GetBase())
+	myData = (*MyData)(oAddress)
 	if myData.a != 1 || myData.b != 2 {
 		t.Fatalf("Failed to recover the original data %v", myData)
 	}
-	if !pool.Belongs(unsafe.Pointer(o)) {
+	if !pool.Belongs(oAddress) {
 		t.Fatalf("Bad pointer %v is allocated from the pool", o)
 	}
-	if ok = pool.Free(unsafe.Pointer(o)); !ok {
+	if ok = pool.Free(oAddress); !ok {
 		t.Fatalf("Failed to free ptr %v", o)
 	}
 	if ok = pool.Free(unsafe.Pointer(pool)); ok {
@@ -122,12 +127,12 @@ func TestAddCustomType(t *testing.T) {
 
 func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
-	cache := New(b.N, int64(TTL))
+	cache := New(Configuration{Size: b.N, Ttl: TTL, LoadFactor: 50})
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), b.N)
-	now := nanotime()
+	now := GetTime()
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", b.N-i)
+		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
 	}
 	b.ResetTimer()
 
@@ -142,13 +147,14 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 		if !pool.Belongs(p) {
 			b.Fatalf("Bad pointer %p is allocated from the pool", p)
 		}
-		if ok := cache.Store(Key(keys[i]), Object(p), now); !ok {
+		if ok := cache.Store(keys[i], Object(uintptr(p)-pool.GetBase()), now); !ok {
 			b.Fatalf("Failed to add item %d", i)
 		}
 	}
 	now += 1000*1000*TTL + 1
 	for i := 0; i < b.N; i++ {
-		p, expired, _ := cache.Evict(now, false)
+		pOffset, expired := cache.Evict(now, false)
+		p := unsafe.Pointer(uintptr(pOffset) + pool.GetBase())
 		if !expired {
 			b.Fatalf("Failed to evict %v", i)
 		}
@@ -199,7 +205,7 @@ func BenchmarkPoolAlloc(b *testing.B) {
 }
 
 func BenchmarkStackAllocationMap(b *testing.B) {
-	now := nanotime()
+	now := GetTime()
 	mapSize := 10 * 1000 * 1000
 	b.ReportAllocs()
 	b.N = mapSize
@@ -207,7 +213,7 @@ func BenchmarkStackAllocationMap(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		it := item{o: Object(i), expirationNs: now + TTL}
+		it := item{o: Object(i), expirationMs: now + TTL}
 		m[uintptr(it.o)] = uintptr(it.o)
 	}
 }
@@ -220,7 +226,7 @@ func BenchmarkFifo(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ok := fifo.add(Key(i))
+		ok := fifo.add(string(i))
 		if !ok {
 			b.Fatalf("Failed to add an object to the FIFO %d", i)
 		}
@@ -292,7 +298,7 @@ func BenchmarkMapStringStoreLookup(b *testing.B) {
 	m := make(map[string]uintptr, mapSize)
 	keys := make([]string, mapSize, mapSize)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", mapSize-i)
+		keys[i] = fmt.Sprintf("000000-%d", mapSize-i)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -316,7 +322,7 @@ func BenchmarkStackAllocationMapString(b *testing.B) {
 	m := make(map[string]mapItem, mapSize)
 	keys := make([]string, mapSize, mapSize)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", mapSize-i)
+		keys[i] = fmt.Sprintf("000000-%d", mapSize-i)
 	}
 	b.ResetTimer()
 
@@ -370,15 +376,15 @@ func BenchmarkXxhashSum64String(b *testing.B) {
 // 150ns cache.Store()
 func BenchmarkStore(b *testing.B) {
 	b.ReportAllocs()
-	now := nanotime()
+	now := GetTime()
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000  %d", b.N-i)
+		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
 	}
-	cache := New(b.N, int64(TTL))
+	cache := New(Configuration{Size: b.N, Ttl: TTL, LoadFactor: 50})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if ok := cache.Store(Key(keys[i]), Object(i), now); !ok {
+		if ok := cache.Store(keys[i], Object(i), now); !ok {
 			b.Fatalf("Failed to add item %d", i)
 		}
 	}
