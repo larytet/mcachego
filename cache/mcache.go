@@ -132,6 +132,8 @@ type Cache struct {
 
 var ns = int64(1000 * 1000)
 
+// I can not rely on time.Time interface: every call to time.Now() is 40ns
+// Nanotime() completes in 10-12ns
 func New(size int, ttl int64) *Cache {
 	c := new(Cache)
 	c.size = size
