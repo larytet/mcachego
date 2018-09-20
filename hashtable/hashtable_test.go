@@ -60,6 +60,21 @@ func TestHashtable(t *testing.T) {
 	}
 }
 
+func prepareNonuniform(size int) []int {
+	samples := make([]int, size, size)
+	for i := 0; i < size; i++ {
+		for {
+			grg := gaussian()
+			index := int(((2.0 + grg) / 4.0) * float64(size-1))
+			if (index >= 0) && (index < size) {
+				samples[i] = index
+				break
+			}
+		}
+	}
+	return samples
+}
+
 // Run the same test with the Go map API for comparison
 func BenchmarkMapStore(b *testing.B) {
 	b.ReportAllocs()
@@ -83,15 +98,32 @@ func BenchmarkMapStoreNonuniform(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
 	}
-	samples := make([]int, b.N, b.N)
-	for i := 0; i < b.N; i++ {
-		grg := gaussian()
-		index := ((2.0 + grg) / 4.0) * float64(b.N-1)
-		samples[i] = int(index)
-	}
-
+	samples := prepareNonuniform(b.N)
 	m := make(map[string]uintptr, b.N)
 	b.ResetTimer()
+	skipped := 0
+	for i := 0; i < b.N; i++ {
+		sample := samples[i]
+		if sample < 0 || sample >= b.N {
+			//b.Logf("Skipped %d", sample)
+			skipped++
+			continue
+		}
+		key := keys[sample]
+		m[key] = uintptr(i)
+	}
+	b.Logf("Skipped total %d", skipped)
+}
+
+func BenchmarkMapLoadNonuniform(b *testing.B) {
+	b.ReportAllocs()
+	//b.N = 100 * 1000
+	keys := make([]string, b.N, b.N)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("%d", b.N-i)
+	}
+	samples := prepareNonuniform(b.N)
+	m := make(map[string]uintptr, b.N)
 	for i := 0; i < b.N; i++ {
 		sample := samples[i]
 		if sample < 0 || sample >= b.N {
@@ -99,6 +131,18 @@ func BenchmarkMapStoreNonuniform(b *testing.B) {
 		}
 		key := keys[sample]
 		m[key] = uintptr(i)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		sample := samples[i]
+		if sample < 0 || sample >= b.N {
+			continue
+		}
+		key := keys[sample]
+		v := m[key]
+		if v != uintptr(i) {
+			b.Fatalf("Wrong value %d, expected %d", v, i)
+		}
 	}
 }
 
