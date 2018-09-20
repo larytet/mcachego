@@ -68,4 +68,5 @@ large table and in the small cache. The small cache can implement a very simple 
 * https://dzone.com/articles/so-you-wanna-go-fast
 * https://www.youtube.com/watch?time_continue=2&v=ncHmEUmJZf4
 * https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
-* http://www.cs.cornell.edu/courses/cs3110/2008fa/lectures/lec21.html
+* http://www.cs.cornell.edu/courses/cs3110/2008fa/lectures/lec21.html - start here 
+* https://en.wikipedia.org/wiki/Hash_table
