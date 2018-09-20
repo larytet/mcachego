@@ -34,6 +34,8 @@ type item struct {
 	o            Object
 }
 
+// A naive cyclic buffer
+// "head == tail" means empty
 type itemFifo struct {
 	head int
 	tail int
