@@ -71,3 +71,4 @@ In another approach I can prepare and keep permanently hash keys for top 10K dom
 * https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 * http://www.cs.cornell.edu/courses/cs3110/2008fa/lectures/lec21.html - start here 
 * https://en.wikipedia.org/wiki/Hash_table
+* https://stackoverflow.com/questions/1691225/good-libraries-for-generating-non-uniform-pseudo-random-numbers

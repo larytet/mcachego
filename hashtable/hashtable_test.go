@@ -3,6 +3,8 @@ package hashtable
 import (
 	"fmt"
 	"github.com/cespare/xxhash"
+	"math"
+	"math/rand"
 	"mcachego/xorshift64star"
 	"testing"
 	"unsafe"
@@ -55,6 +57,48 @@ func TestHashtable(t *testing.T) {
 		if v != 0 {
 			t.Fatalf("Got %v instead of 0 from the hashtable", v)
 		}
+	}
+}
+
+// Run the same test with the Go map API for comparison
+func BenchmarkMapStore(b *testing.B) {
+	b.ReportAllocs()
+	//b.N = 100 * 1000
+	keys := make([]string, b.N, b.N)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("%d", b.N-i)
+	}
+	m := make(map[string]uintptr, b.N)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := keys[i]
+		m[key] = uintptr(i)
+	}
+}
+
+func BenchmarkMapStoreNonuniform(b *testing.B) {
+	b.ReportAllocs()
+	//b.N = 100 * 1000
+	keys := make([]string, b.N, b.N)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("%d", b.N-i)
+	}
+	samples := make([]int, b.N, b.N)
+	for i := 0; i < b.N; i++ {
+		grg := gaussian()
+		index := ((2.0 + grg) / 4.0) * float64(b.N-1)
+		samples[i] = int(index)
+	}
+
+	m := make(map[string]uintptr, b.N)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		sample := samples[i]
+		if sample < 0 || sample >= b.N {
+			continue
+		}
+		key := keys[sample]
+		m[key] = uintptr(i)
 	}
 }
 
@@ -111,20 +155,20 @@ func BenchmarkHashtableLoad(b *testing.B) {
 	}
 }
 
-// Run the same test with the Go map API for comparison
-func BenchmarkMapStore(b *testing.B) {
-	b.ReportAllocs()
-	//b.N = 100 * 1000
-	keys := make([]string, b.N, b.N)
-	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("%d", b.N-i)
+func float64Range(a, b float64) float64 {
+	return a + rand.Float64()*(b-a)
+}
+
+// From https://github.com/leesper/go_rng/blob/master/gauss.go
+func gaussian() float64 {
+	// Box-Muller Transform
+	var r, x, y float64
+	for r >= 1 || r == 0 {
+		x = float64Range(-1.0, 1.0)
+		y = float64Range(-1.0, 1.0)
+		r = x*x + y*y
 	}
-	m := make(map[string]uintptr, b.N)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		key := keys[i]
-		m[key] = uintptr(i)
-	}
+	return x * math.Sqrt(-2*math.Log(r)/r)
 }
 
 func BenchmarkRandomMemoryAccess(b *testing.B) {
