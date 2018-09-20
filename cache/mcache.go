@@ -26,6 +26,9 @@ type Object uintptr
 // Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
 // If I keep the item struct small I can avoid memory pools for items
 // I want a benchmark here: copy vs custom memory pool
+// If I use 32 bits for both  fields the smaller item delivers ~20% better
+// performance. I can do it if I assume timeout in ms and offset instead of absolute
+// address for "o"
 type item struct {
 	expirationNs int64
 	o            Object
