@@ -77,8 +77,6 @@ func prepareNonuniform(size int) []int {
 
 // Run the same test with the Go map API for comparison
 func BenchmarkMapStore(b *testing.B) {
-	b.ReportAllocs()
-	//b.N = 100 * 1000
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
@@ -91,9 +89,16 @@ func BenchmarkMapStore(b *testing.B) {
 	}
 }
 
+func BenchmarkMapStoreSameKey(b *testing.B) {
+	m := make(map[string]uintptr, b.N)
+	key := "0"
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m[key] = uintptr(i)
+	}
+}
+
 func BenchmarkMapStoreNonuniform(b *testing.B) {
-	b.ReportAllocs()
-	//b.N = 100 * 1000
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
@@ -112,12 +117,9 @@ func BenchmarkMapStoreNonuniform(b *testing.B) {
 		key := keys[sample]
 		m[key] = uintptr(i)
 	}
-	b.Logf("Skipped total %d", skipped)
 }
 
 func BenchmarkMapLoadNonuniform(b *testing.B) {
-	b.ReportAllocs()
-	//b.N = 100 * 1000
 	keys := make([]string, b.N, b.N)
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("%d", b.N-i)
@@ -126,22 +128,16 @@ func BenchmarkMapLoadNonuniform(b *testing.B) {
 	m := make(map[string]uintptr, b.N)
 	for i := 0; i < b.N; i++ {
 		sample := samples[i]
-		if sample < 0 || sample >= b.N {
-			continue
-		}
 		key := keys[sample]
-		m[key] = uintptr(i)
+		m[key] = 1
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		sample := samples[i]
-		if sample < 0 || sample >= b.N {
-			continue
-		}
 		key := keys[sample]
 		v := m[key]
-		if v != uintptr(i) {
-			b.Fatalf("Wrong value %d, expected %d", v, i)
+		if v != 1 {
+			b.Fatalf("Wrong value %v[%d]", key, v)
 		}
 	}
 }
