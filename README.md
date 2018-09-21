@@ -58,6 +58,7 @@ In another approach I can prepare and keep permanently hash keys for top 10K dom
 * https://github.com/sch00lb0y/vegamcache
 * https://github.com/OneOfOne/cmap
 * https://github.com/golang/groupcache
+* https://github.com/capnproto/capnproto/blob/master/c++/src/kj/map.h
 
 
 ## Links
