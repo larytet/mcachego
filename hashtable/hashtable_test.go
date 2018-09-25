@@ -7,11 +7,10 @@ import (
 	"math/rand"
 	"mcachego/xorshift64star"
 	"testing"
-	"unsafe"
 )
 
 func TestHashtable(t *testing.T) {
-	itemSize := unsafe.Sizeof(*new(item))
+	itemSize := GetItemSize()
 	if itemSize%8 != 0 {
 		t.Fatalf("Hashtable item size %d is not alligned", itemSize)
 	}

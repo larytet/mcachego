@@ -78,6 +78,11 @@ func (i *item) isSame(other *item) bool {
 		(i.key == other.key)
 }
 
+func GetItemSize() int {
+	itemSize := unsafe.Sizeof(*new(item))
+	return int(itemSize)
+}
+
 // This is by far the most expensive single line in the Load() flow
 // The line is responsible for 80% of the execution time in large hashtables
 // 'i' is a random address in a potentially very large hashtable

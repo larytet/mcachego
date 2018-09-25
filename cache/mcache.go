@@ -53,9 +53,12 @@ type Configuration struct {
 
 type Cache struct {
 	// FIFO of the items to support eviction of the expired entries
-	fifo          *itemFifo
-	size          int
-	shards        []shard
+	fifo   *itemFifo
+	size   int
+	shards []shard
+	// random memory access dominates performance
+	// for large caches. I keep a small region for fast looking
+	l1cache       shard
 	shardsMask    uint64
 	statistics    *Statistics
 	configuration Configuration
@@ -93,8 +96,11 @@ func New(configuration Configuration) *Cache {
 	c.shards = make([]shard, configuration.Shards, configuration.Shards)
 	shardSize := c.size / configuration.Shards
 	for i, _ := range c.shards {
-		c.shards[i].table = hashtable.New(shardSize, 64)
+		c.shards[i].init(shardSize, configuration.Collisions)
 	}
+	pageSize := 4 * 1024
+	c.l1cache.init(pageSize/hashtable.GetItemSize(), 4)
+
 	c.Reset()
 	return c
 }
@@ -161,6 +167,9 @@ func (c *Cache) Load(key string) (o Object, ok bool) {
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsMask
 	shard := &c.shards[shardIdx]
+
+	//	c.l1cache.mutex.RLock()
+	//	c.l1cache.mutex.RUnlock()
 
 	shard.mutex.RLock()
 	iValue, ok, _ := shard.table.Load(key, hash)
@@ -310,4 +319,8 @@ func nanotime() int64
 type shard struct {
 	table *hashtable.Hashtable
 	mutex sync.RWMutex
+}
+
+func (sh *shard) init(shardSize int, maxCollisions int) {
+	sh.table = hashtable.New(shardSize, maxCollisions)
 }
