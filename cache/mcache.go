@@ -58,6 +58,8 @@ type Cache struct {
 	shards []shard
 	// random memory access dominates performance
 	// for large caches. I keep a small region for fast looking
+	// What if the cache is small or the application creates lot of
+	// small caches? I would leave it to the application
 	l1cache       shard
 	shardsMask    uint64
 	statistics    *Statistics
