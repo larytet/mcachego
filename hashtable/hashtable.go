@@ -215,7 +215,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 // Find the key in the table, return the object
 // Can I assume that Load() is more frequent than Store()?
 // 'ref' can be used in the subsequent Remove() and save lookup
-func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uintptr) {
+func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uint32) {
 	h.statistics.Load += 1
 	if index, collisions, chainStart, ok := h.find(key, hash); ok {
 		h.statistics.LoadSuccess += 1
@@ -228,14 +228,14 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 			h.data[chainStart] = *it
 			h.statistics.LoadSwap += 1
 		}
-		return value, true, uintptr(unsafe.Pointer(it))
+		return value, true, uint32(uintptr(unsafe.Pointer(it)) - uintptr(unsafe.Pointer(&h.data[0])))
 	}
 	h.statistics.LoadFailed += 1
 	return 0, false, 0
 }
 
-func (h *Hashtable) RemoveByRef(ref uintptr) {
-	it := (*item)(unsafe.Pointer(ref))
+func (h *Hashtable) RemoveByRef(ref uint32) {
+	it := (*item)(unsafe.Pointer(uintptr(ref) + uintptr(unsafe.Pointer(&h.data[0]))))
 	it.reset()
 }
 

@@ -156,10 +156,9 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 	return ok
 }
 
-type ItemRef struct {
-	hashtableRef uintptr
-	shard        *shard
-}
+// Can I return a single 64 bits word?
+// hashtableRef can be 32 bits offset from the beginning of the hash
+type ItemRef uint64
 
 // Lookup in the cache
 // Application can use "ref" in calls to EvictByRef()
@@ -168,12 +167,11 @@ func (c *Cache) Load(key string) (o Object, ref ItemRef, ok bool) {
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsMask
 	shard := &c.shards[shardIdx]
-	ref.shard = shard
 
 	shard.mutex.RLock()
 	iValue, ok, hashtableRef := shard.table.Load(key, hash)
 	shard.mutex.RUnlock()
-	ref.hashtableRef = hashtableRef
+	ref = ItemRef(uint64(hashtableRef) | (uint64(shardIdx) << 32))
 
 	i := *(*item)(unsafe.Pointer(&iValue))
 	return i.o, ref, ok
@@ -182,9 +180,11 @@ func (c *Cache) Load(key string) (o Object, ref ItemRef, ok bool) {
 // This API can save some CPU cycles if the application peforms
 // lot of lookup-delete cycles
 func (c *Cache) EvictByRef(ref ItemRef) {
-	shard := ref.shard
+	shardIdx := (uint64(ref) >> 32) & uint64(^uint32(0))
+	hashtableRef := uint32(uint64(ref) & uint64(^uint32(0)))
+	shard := &c.shards[shardIdx]
 	shard.mutex.Lock()
-	shard.table.RemoveByRef(ref.hashtableRef)
+	shard.table.RemoveByRef(hashtableRef)
 	shard.mutex.Unlock()
 }
 
