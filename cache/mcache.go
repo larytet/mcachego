@@ -200,13 +200,15 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 	// or pick a not initialized ("") key
 	key, ok := c.fifo.pick()
 	if ok {
+		// I can save hashing if I keep the hash in the FIFO
+		// I am going to call Evict() for every Store(). I assume that the Load()
+		// performance is more important
 		hash := xxhash.Sum64String(string(key))
 		shardIdx := hash & c.shardsMask
 		shard := &c.shards[shardIdx]
 
 		shard.mutex.Lock()
 
-		// I can save hashing if I keep the hash in the FIFO
 		if iValue, ok, ref := shard.table.Load(key, hash); ok {
 			i := (*item)(unsafe.Pointer(&iValue))
 			isExpired := ((i.expirationMs - now) <= 0)
@@ -223,9 +225,10 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 				c.statistics.EvictNotExpired += 1
 			}
 		} else {
-			// This is bad - entry is in the eviction FIFO, but not in the map
-			// memory leak?
+			// This is bad - entry is in the eviction FIFO, but not in the hashtable
+			// memory leak? Was removed not by eviction?
 			c.statistics.EvictLookupFailed += 1
+			c.fifo.remove()
 		}
 
 		shard.mutex.Unlock()

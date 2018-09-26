@@ -10,6 +10,7 @@ This is yet another Go cache. I need the fastest possible implementation with op
 * Minimalistic API
 * Eviction only via expiration
 * "Unsafe" memory pool 
+* 
 
 ## Benchmarks
 
