@@ -163,7 +163,7 @@ type ItemRef struct {
 
 // Lookup in the cache
 // Application can use "ref" in calls to EvictByRef()
-func (c *Cache) Load(key string) (o Object, ok bool, ref ItemRef) {
+func (c *Cache) Load(key string) (o Object, ref ItemRef, ok bool) {
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsMask
 	shard := &c.shards[shardIdx]
@@ -175,7 +175,7 @@ func (c *Cache) Load(key string) (o Object, ok bool, ref ItemRef) {
 	ref.hashtableRef = hashtableRef
 
 	i := *(*item)(unsafe.Pointer(&iValue))
-	return i.o, ok, ref
+	return i.o, ref, ok
 }
 
 // This API can save some CPU cycles if the application peforms

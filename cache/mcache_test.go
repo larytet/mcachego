@@ -40,7 +40,7 @@ func TestAdd(t *testing.T) {
 		t.Fatalf("Cache is not empty %d", smallCache.Len())
 	}
 	smallCache.Store("0", 0, GetTime())
-	v, ok, _ := smallCache.Load("0")
+	v, _, ok := smallCache.Load("0")
 	if !ok {
 		t.Fatalf("Failed to load value from the cache")
 	}
@@ -66,7 +66,7 @@ func TestRemove(t *testing.T) {
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
-	_, ok, _ := smallCache.Load("0")
+	_, _, ok := smallCache.Load("0")
 	if ok {
 		t.Fatalf("Failed to remove value from the cache")
 	}
@@ -80,13 +80,16 @@ func TestRemove(t *testing.T) {
 func TestRemoveByRef(t *testing.T) {
 	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
 	smallCache.Store("0", 0, GetTime())
-	_, ok, ref := smallCache.Load("0")
+	v, ref, ok := smallCache.Load("0")
 	if !ok {
 		t.Fatalf("Failed to find value in the cache")
 	}
+	if v != 0 {
+		t.Fatalf("Bad entry in the map %v", v)
+	}
 
 	smallCache.EvictByRef(ref)
-	_, ok, _ = smallCache.Load("0")
+	_, _, ok = smallCache.Load("0")
 	if ok {
 		t.Fatalf("Failed to remove value from the cache")
 	}
