@@ -8,9 +8,9 @@ This is yet another Go cache. I need the fastest possible implementation with op
 * Synchronisation is optional
 * All items have the same expiration period
 * Minimalistic API
-* Eviction only via expiration
+* Eviction only via expiration (usually)
 * "Unsafe" memory pool 
-* 
+* Eviciton by reference
 
 ## Benchmarks
 
