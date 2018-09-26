@@ -156,18 +156,31 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 	return ok
 }
 
+type ItemRef struct {
+	hashtableRef uintptr
+	shard        *shard
+}
+
 // Lookup in the cache
-func (c *Cache) Load(key string) (o Object, ok bool) {
+// Application can use "ref" in calls to EvictByRef()
+func (c *Cache) Load(key string) (o Object, ok bool, ref ItemRef) {
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsMask
 	shard := &c.shards[shardIdx]
+	ref.shard = shard
 
 	shard.mutex.RLock()
-	iValue, ok, _ := shard.table.Load(key, hash)
+	iValue, ok, ref.hashtableRef := shard.table.Load(key, hash)
 	shard.mutex.RUnlock()
 
 	i := *(*item)(unsafe.Pointer(&iValue))
-	return i.o, ok
+	return i.o, ok, ref
+}
+
+// This API can save some CPU cycles if the application peforms
+// lot of lookup-delete cycles
+func (c *Cache) EvictByRef(ref ItemRef) {
+	ref.shard.table.RemoveByRef(ref.hashtableRef)
 }
 
 // Evict an expired - added before time "now" ms - entry
