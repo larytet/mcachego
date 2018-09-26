@@ -170,8 +170,9 @@ func (c *Cache) Load(key string) (o Object, ok bool, ref ItemRef) {
 	ref.shard = shard
 
 	shard.mutex.RLock()
-	iValue, ok, ref.hashtableRef := shard.table.Load(key, hash)
+	iValue, ok, hashtableRef := shard.table.Load(key, hash)
 	shard.mutex.RUnlock()
+	ref.hashtableRef = hashtableRef
 
 	i := *(*item)(unsafe.Pointer(&iValue))
 	return i.o, ok, ref
@@ -180,7 +181,10 @@ func (c *Cache) Load(key string) (o Object, ok bool, ref ItemRef) {
 // This API can save some CPU cycles if the application peforms
 // lot of lookup-delete cycles
 func (c *Cache) EvictByRef(ref ItemRef) {
-	ref.shard.table.RemoveByRef(ref.hashtableRef)
+	shard := ref.shard
+	shard.mutex.Lock()
+	shard.table.RemoveByRef(ref.hashtableRef)
+	shard.mutex.Unlock()
 }
 
 // Evict an expired - added before time "now" ms - entry
