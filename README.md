@@ -74,3 +74,4 @@ In another approach I can prepare and keep permanently hash keys for top 10K dom
 * http://www.cs.cornell.edu/courses/cs3110/2008fa/lectures/lec21.html - start here 
 * https://en.wikipedia.org/wiki/Hash_table
 * https://stackoverflow.com/questions/1691225/good-libraries-for-generating-non-uniform-pseudo-random-numbers
+* https://www.youtube.com/watch?v=C1EtfDnsdDs
