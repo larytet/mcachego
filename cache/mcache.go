@@ -163,6 +163,7 @@ type ItemRef struct {
 
 // Lookup in the cache
 // Application can use "ref" in calls to EvictByRef()
+// Allocation and return of ref costs 10ns/Load Should I use a dedicated API?
 func (c *Cache) Load(key string) (o Object, ref ItemRef, ok bool) {
 	hash := xxhash.Sum64String(string(key))
 	shardIdx := hash & c.shardsMask
