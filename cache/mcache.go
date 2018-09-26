@@ -183,6 +183,8 @@ func (c *Cache) Load(key string) (o Object, ref ItemRef, ok bool) {
 func (c *Cache) EvictByRef(ref ItemRef) {
 	shardIdx := (uint64(ref) >> 32) & uint64(^uint32(0))
 	hashtableRef := uint32(uint64(ref) & uint64(^uint32(0)))
+	// I can save this line (multiplication) if I compose ItemRef from the
+	// shard address instead of index
 	shard := &c.shards[shardIdx]
 	shard.mutex.Lock()
 	shard.table.RemoveByRef(hashtableRef)

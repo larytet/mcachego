@@ -236,7 +236,7 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 
 // Fast removal by reference. Argument "ref" is an offest from the start of the allocated data
 // This approach limits size of the hashtable by 4GB.The idea is the the user of the API
-// implements some sharding scheme. The user composes an item ID from the shard ID
+// implements some sharding scheme. The user composes an item ID (64 bits) from the shard ID
 // and the hashtable ref
 func (h *Hashtable) RemoveByRef(ref uint32) {
 	it := (*item)(unsafe.Pointer(uintptr(ref) + uintptr(unsafe.Pointer(&h.data[0]))))
