@@ -6,9 +6,34 @@ import (
 	"math"
 	"math/rand"
 	"mcachego/xorshift64star"
+	"sync"
 	"testing"
 	"unsafe"
 )
+
+// Run the same test with the Go map API for comparison
+func BenchmarkMapMutex(b *testing.B) {
+	keysCount := 100
+	keys := make([]string, keysCount, keysCount)
+	for i := 0; i < keysCount; i++ {
+		keys[i] = fmt.Sprintf("%d", b.N-i)
+	}
+	m := make(map[string]uintptr, keysCount)
+	var mutex sync.Mutex
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, key := range keys {
+			mutex.Lock()
+			m[key] = uintptr(i)
+			mutex.Unlock()
+		}
+		for _, key := range keys {
+			mutex.Lock()
+			delete(m, key)
+			mutex.Unlock()
+		}
+	}
+}
 
 func TestHashtable(t *testing.T) {
 	itemSize := unsafe.Sizeof(*new(item))
