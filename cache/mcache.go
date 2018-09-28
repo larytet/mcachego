@@ -180,6 +180,9 @@ func (c *Cache) Load(key string) (o Object, ref ItemRef, ok bool) {
 
 // This API can save some CPU cycles if the application peforms
 // lot of lookup-delete cycles
+// This API breaks "eviction only by timeout" guarantee
+// TODO I can remove the entry from the eviction FIFO as well (mark as nil)
+// I can keep the index (or reference) to the FIFO item in the map.
 func (c *Cache) EvictByRef(ref ItemRef) {
 	shardIdx := (uint64(ref) >> 32) & uint64(^uint32(0))
 	hashtableRef := uint32(uint64(ref) & uint64(^uint32(0)))
@@ -227,6 +230,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 		} else {
 			// This is bad - entry is in the eviction FIFO, but not in the hashtable
 			// memory leak? Was removed not by eviction?
+			// Currently EvictByRef() does not remove entries from the eviction FIFO
 			c.statistics.EvictLookupFailed += 1
 			c.fifo.remove()
 		}
