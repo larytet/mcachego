@@ -11,7 +11,6 @@ import (
 	"unsafe"
 )
 
-// Run the same test with the Go map API for comparison
 func BenchmarkMapMutex(b *testing.B) {
 	keysCount := 100
 	keys := make([]string, keysCount, keysCount)
@@ -33,6 +32,42 @@ func BenchmarkMapMutex(b *testing.B) {
 			mutex.Unlock()
 		}
 	}
+}
+
+func BenchmarkMapChannel(b *testing.B) {
+	keysCount := 100
+	keys := make([]string, keysCount, keysCount)
+	for i := 0; i < keysCount; i++ {
+		keys[i] = fmt.Sprintf("%d", b.N-i)
+	}
+	m := make(map[string]int, keysCount)
+	insertCh := make(chan int)
+	deleteCh := make(chan int)
+	exitCh := make(chan int)
+	go func() {
+		for {
+			select {
+			case keyIdx := <-insertCh:
+				key := keys[keyIdx]
+				m[key] = keyIdx
+			case keyIdx := <-deleteCh:
+				key := keys[keyIdx]
+				delete(m, key)
+			case <-exitCh:
+				return
+			}
+		}
+	}()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for idx, _ := range keys {
+			insertCh <- idx
+		}
+		for idx, _ := range keys {
+			deleteCh <- idx
+		}
+	}
+	exitCh <- 0
 }
 
 func TestHashtable(t *testing.T) {
