@@ -11,6 +11,15 @@ import (
 	"unsafe"
 )
 
+func TestRace(t *testing.T) {
+	var done bool
+	go func() {
+		done = true
+	}()
+	for !done {
+	}
+}
+
 func BenchmarkMapMutex(b *testing.B) {
 	keysCount := 100
 	keys := make([]string, keysCount, keysCount)
