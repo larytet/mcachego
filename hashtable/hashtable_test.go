@@ -6,10 +6,38 @@ import (
 	"math"
 	"math/rand"
 	"mcachego/xorshift64star"
+	"runtime"
 	"sync"
 	"testing"
 	"unsafe"
 )
+
+type A struct {
+	str string
+}
+
+var firstptr = new(A)
+
+func T1estUnsafe(t *testing.T) {
+	firstptr.str = "first"
+	firstUnsafe := uintptr(unsafe.Pointer(firstptr))
+	secondptr := new(A)
+	secondptr.str = "second"
+	firstptr = secondptr
+	runtime.GC()
+	var allocated [][]int
+	var i = 0
+	for {
+		block := make([]int, 10*1024*1024)
+		allocated = append(allocated, block)
+		if uintptr(firstUnsafe) >= uintptr(unsafe.Pointer(&block[0])) && uintptr(firstUnsafe) <= uintptr(unsafe.Pointer(&block[len(block)-1])) {
+			break
+		}
+		runtime.GC()
+		i++
+		t.Errorf("Allocated %d", i)
+	}
+}
 
 func TestRace(t *testing.T) {
 	var done bool
