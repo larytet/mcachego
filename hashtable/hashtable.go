@@ -130,10 +130,12 @@ func New(size int, maxCollisions int) (h *Hashtable) {
 }
 
 func (h *Hashtable) Reset() {
-	// GC will remove strings anyway. Better I will perform the loop
+	// I have two alternatives here - reallocate the h.data or reset each
+	// item in h.data separately. In both cases GC will work hard and
+	// removes strings (keys). Better I will perform the loop
 	// I want to touch all entries after New(). If the table is small
 	// it will fit L3 data cache and first store will be fast
-	// At the very least I get rid of memory page miss on first Stor()
+	// At the very least I get rid of memory page miss for the first Store()
 	for i := 0; i < len(h.data); i++ {
 		h.data[i].reset()
 	}
