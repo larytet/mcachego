@@ -10,6 +10,8 @@ import (
 // An alternative for Go runtime implemenation of map[string]uintptr
 // Requires to specify maximum number of hash collisions at the initialization time
 // Insert fails if there are too many collisions
+// Allows to use a custom hash funciton - Store/Load API requires both the key and the hash
+//
 // The goal is 3x improvement and true O(1) performance (what about data cache miss?)
 // See also:
 // * https://medium.com/@ConnorPeet/go-maps-are-not-o-1-91c1e61110bf
@@ -96,11 +98,19 @@ type Hashtable struct {
 	// Resize automatically if not zero
 	ResizeFactor int
 	data         []item
-	mutex        sync.Mutex
-	// Assume 64 bits reliable
+	// Not used. Mutex will be called in the LoadSync/StoreSync API
+	mutex sync.Mutex
+	// Not used. Assume 64 bits reliable
+	// The idea is that if the hash function reliable
+	// I can avoid collisions and skip comparing the key
 	RelyOnHash bool
 }
 
+// size is the hashtable size which is normally 2x - 4x times larger than
+// the number of items you want to keep in the hashtable
+// maxCollisions is the maximum number collisions before Load() gives up
+// and returns an error. Application can try to create a new larger table
+// and copy the elements there
 func New(size int, maxCollisions int) (h *Hashtable) {
 	h = new(Hashtable)
 	size = getSize(size)
@@ -728,5 +738,6 @@ func getSize(N int) int {
 			return p
 		}
 	}
+	// if there is no match in the table of primes I fallback to the size 2^n-1
 	return GetPower2Sub1(N)
 }
