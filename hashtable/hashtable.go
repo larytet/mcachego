@@ -724,6 +724,7 @@ func moduloSize(hash uint64, size int) int {
 	case 9122181901073924329:
 		return int(hash % 9122181901073924329)
 	}
+	// Fallback if the table capacity is not a prime number
 	return int(hash % uint64(size))
 }
 
@@ -777,6 +778,6 @@ func getSize(N int) int {
 			return p
 		}
 	}
-	// if there is no match in the table of primes I fallback to the size 2^n-1
+	// if there is no match in the table of primes I fallback to the size (2^n-1)
 	return GetPower2Sub1(N)
 }
