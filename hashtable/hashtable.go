@@ -107,11 +107,16 @@ type Hashtable struct {
 	RelyOnHash bool
 }
 
-// size is the hashtable size which is normally 2x - 4x times larger than
+// size is the maximum hashtable capacity and usually is 2x-4x times larger than
 // the number of items you want to keep in the hashtable
+// For the "load factor" 0.5  capacity is 2x number of items
+// If the hash function is perfect the load factor can be 1
 // maxCollisions is the maximum number collisions before Load() gives up
-// and returns an error. Application can try to create a new larger table
-// and copy the elements there
+// and returns an error.
+// I do not provide automatic resizing
+// I can not resize, because I do not know the hash function
+// This is up to the application can try to create a new larger table
+// and copy the elements there.
 func New(size int, maxCollisions int) (h *Hashtable) {
 	h = new(Hashtable)
 	size = getSize(size)
@@ -721,6 +726,7 @@ func moduloSize(hash uint64, size int) int {
 }
 
 // From https://github.com/skarupke/flat_hash_map/blob/master/flat_hash_map.hpp
+// Prime number for the table size is slighly better than (2^n-1) in some cases
 func getSize(N int) int {
 	prime_list := []int{
 		2, 3, 5, 7, 11, 13, 17, 23, 29, 37, 47,
