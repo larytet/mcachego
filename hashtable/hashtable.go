@@ -174,6 +174,11 @@ func (hc *hashContext) nextIndex() (index int) {
 // You want the hash function to hit the same 4K memory page for most frequent lookups.
 // You want "clustering" for a few keys, and uniform distribution for most keys.
 // This approach can potentially improve the peformance of the large hashtables by 50%-80%
+// Hint. You calculate hash only once if you want to check if the element exists first
+// and remove the existing element before storing a new one. In the golang map this code
+// will require three calls to the hash function
+// A bonus - you choose the hash function and can switch it in the run-time.
+// See also https://github.com/golang/go/issues/21195
 func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	h.statistics.Store += 1
 
