@@ -226,6 +226,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 // Find the key in the table, return the object
 // Can I assume that Load() is more frequent than Store()?
 // 'ref' can be used in the subsequent Remove() and save lookup
+// Should I define type 'Ref'?
 func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uint32) {
 	h.statistics.Load += 1
 	if index, collisions, chainStart, ok := h.find(key, hash); ok {
@@ -246,6 +247,7 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 }
 
 // Iterate through the hashtable. Firsr time use index 0
+// I want to use 32 bits ref here?
 func (h *Hashtable) GetNext(index int) (nextIndex int, value uintptr, key string, ok bool) {
 	for i := index; i < len(h.data); i++ {
 		it := &h.data[i]
