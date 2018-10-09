@@ -57,7 +57,7 @@ type item struct {
 	// do not keep the key in the table (see also RelyOnHash)
 	key string
 
-	// User value
+	// User value. Can I assume 32 bits here?
 	value uintptr
 
 	// hash of the key for quick compare
@@ -245,6 +245,17 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 	return 0, false, 0
 }
 
+// Iterate through the hashtable. Firsr time use index 0
+func (h *Hashtable) GetNext(index int) (nextIndex int, value uintptr, key string, ok bool) {
+	for i := index; i < len(h.data); i++ {
+		it := &h.data[i]
+		if it.inUse() {
+			return (i + 1), it.value, it.key, true
+		}
+	}
+	return len(h.data), 0, "", false
+}
+
 // Fast removal by reference. Argument "ref" is an offest from the start of the allocated data
 // This approach limits size of the hashtable by 4GB.The idea is the the user of the API
 // implements some sharding scheme. The user composes an item ID (64 bits) from the shard ID
@@ -279,7 +290,10 @@ func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {
 
 // Resize the table. Usually you call the function to make
 // the table larger and reduce number of collisions
-func (h *Hashtable) Resize(factor int) bool {
+// You can call this function if you make run-time changes of the hash function
+// (hash collision attack?)
+// Not supported
+func (h *Hashtable) Resize(factor int, maxCollisions int) bool {
 	return false
 }
 
