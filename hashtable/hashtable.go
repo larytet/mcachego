@@ -165,12 +165,12 @@ func (hc *hashContext) nextIndex() (index int) {
 	return hc.index
 }
 
+// Store a key:value pair in the hashtable
+// 'hash' can be xxhash.Sum64String(key)
+//
 // Store() is not thread safe. I could CompareAndSwap and lock the items, but
 // atomics are expensive. I assume that the application will use a mutex anyway
 // or I can implement LoadSync()/StoreSync() API if I need it
-//
-// Store a key:value pair in the hashtable
-// 'hash' can be xxhash.Sum64String(key)
 // You want the hash function to hit the same 4K memory page for most frequent lookups.
 // You want "clustering" for a few keys, and uniform distribution for most keys.
 // This approach can potentially improve the peformance of the large hashtables by 50%-80%
