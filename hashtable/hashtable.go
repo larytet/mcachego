@@ -339,9 +339,12 @@ func GetPower2(N int) int {
 // and source code https://github.com/skarupke/flat_hash_map/blob/master/flat_hash_map.hpp
 // This function shaves 10% off the Store() CPU consumption
 // Call to moduloSize() is 2x faster than a naive hash % size - 4ns vs 8ns
-// Can I do it faster by approximating the result?
+// Can I do it faster by approximating the result? Does it make sense to cache results
+// of modulo for small tables?
 func moduloSize(hash uint64, size int) int {
 	switch size {
+	// between 5K to 1M entries are at the top of the swicth
+	// TODO check what the compiler does here
 	case 5087:
 		return int(hash % 5087)
 	case 6421:
