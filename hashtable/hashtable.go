@@ -223,7 +223,11 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 	return 0, collisions, chainStart, false
 }
 
-// Find the key in the table, return the object
+// Load is not thread safe. There is a race if another tread removes the item
+// while I am looking for it. I can find an item in inconsistent state
+// Find the key in the table, return the object. It is pain to pay price of
+// the atomic swap. What I want to do here?
+//
 // Can I assume that Load() is more frequent than Store()?
 // 'ref' can be used in the subsequent Remove() and save lookup
 // Should I define type 'Ref'?
