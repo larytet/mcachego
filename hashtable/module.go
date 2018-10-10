@@ -26,8 +26,7 @@ func GetPower2(N int) int {
 	return N
 }
 
-// I want a switch/case and division by const and let the compiler optimize modulo
-// by generating the best assembler it can
+// I want the compiler to optimize modulo by generating the best assembler it can
 // See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 // and source code https://github.com/skarupke/flat_hash_map/blob/master/flat_hash_map.hpp
 // This function shaves 10% off the Store() CPU consumption
