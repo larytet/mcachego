@@ -249,7 +249,8 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ch
 // Should I define type 'Ref'?
 func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uint32) {
 	h.statistics.Load += 1
-	if index, collisions, chainStart, ok := h.find(key, hash); ok {
+	index, collisions, chainStart, ok := h.find(key, hash)
+	if ok {
 		h.statistics.LoadSuccess += 1
 		it := &h.data[index]
 		value = it.value
