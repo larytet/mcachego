@@ -220,15 +220,15 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	return false
 }
 
-func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, chainStart int, ok bool) {
+func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, chainStart int, ok bool) {
 	hc := hashContext{it: item{key: key}, size: h.size}
 	index = hc.firstIndex(hash)
 	chainStart = index
-	for collisions = 0; collisions < h.maxCollisions; collisions++ {
+	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
 		if it.isSame(&hc.it) {
 			h.statistics.FindSuccess += 1
-			return index, collisions, chainStart, true
+			return index, collisions > 0, chainStart, true
 		} else {
 			// should be  a rare occasion
 			h.statistics.FindCollision += 1
@@ -236,7 +236,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 		}
 	}
 	h.statistics.FindFailed += 1
-	return 0, collisions, chainStart, false
+	return 0, true, chainStart, false
 }
 
 // Load is not thread safe. There is a race if another tread removes the item
@@ -255,7 +255,7 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 		value = it.value
 		// Swap the found item with the first in the "chain" and improve lookup next time
 		// due to CPU caching
-		if collisions > 0 {
+		if collisions {
 			tmp := *it
 			*it = h.data[chainStart]
 			h.data[chainStart] = tmp
@@ -292,7 +292,7 @@ func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
 	if index, collisions, _, ok := h.find(key, hash); ok {
 		h.statistics.RemoveSuccess += 1
-		if collisions > 0 {
+		if collisions {
 			h.collisions -= 1
 		}
 		// TODO I can move all colliding items left and find a match
@@ -363,6 +363,8 @@ func moduloSize(hash uint64, size int) int {
 	// TODO check what the compiler does here
 	case 499:
 		return int(hash % 499)
+	case 397:
+		return int(hash % 397)
 	case 97:
 		return int(hash % 97)
 	case 127:
@@ -451,8 +453,6 @@ func moduloSize(hash uint64, size int) int {
 		return int(hash % 251)
 	case 313:
 		return int(hash % 313)
-	case 397:
-		return int(hash % 397)
 	case 631:
 		return int(hash % 631)
 	case 797:

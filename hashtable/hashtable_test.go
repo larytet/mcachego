@@ -79,7 +79,6 @@ func BenchmarkSmallMapLookup(b *testing.B) {
 
 func BenchmarkSmallHashtableLookup(b *testing.B) {
 	size := SmallTableSize
-	h := New(4*size, 64)
 	keys := make([]string, size, size)
 	hashes := make([]uint64, size, size)
 	for i := 0; i < size; i++ {
@@ -87,6 +86,7 @@ func BenchmarkSmallHashtableLookup(b *testing.B) {
 		keys[i] = key
 		hashes[i] = xxhash.Sum64String(key)
 	}
+	h := New(4*size, 64)
 	for i := 0; i < size; i++ {
 		key := keys[i]
 		hash := hashes[i]
