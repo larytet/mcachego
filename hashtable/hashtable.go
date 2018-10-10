@@ -197,7 +197,7 @@ func isSameAndInUse(i *item, other *item) bool {
 
 		// this line consumes 50% of the CPU time
 		// for tables smaller than a memory page
-		// comparison of a short string
+		// when comparing short strings
 		// for long keys the line will dominate CPU
 		// consumption. TODO Check RelyOnHash?
 		(i.key == other.key)
