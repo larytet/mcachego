@@ -48,6 +48,70 @@ func TestRace(t *testing.T) {
 	}
 }
 
+// Run the same test with the Go map API for comparison
+func BenchmarkSmallMapLookup(b *testing.B) {
+	size := 100
+	keys := make([]string, size, size)
+	for i := 0; i < size; i++ {
+		keys[i] = fmt.Sprintf("%d", size-i)
+	}
+	samples := prepareNonuniform(size)
+	m := make(map[string]uintptr, size)
+	for i := 0; i < size; i++ {
+		sample := samples[i]
+		key := keys[sample]
+		m[key] = 1
+	}
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		for i := 0; i < size; i++ {
+			sample := samples[i]
+			key := keys[sample]
+			v := m[key]
+			if v != 1 {
+				b.Fatalf("Wrong value %v[%d]", key, v)
+			}
+		}
+	}
+}
+
+func BenchmarkSmallHashtableLookup(b *testing.B) {
+	size := 10
+	h := New(4*size, 4)
+	keys := make([]string, size, size)
+	hashes := make([]uint64, size, size)
+	for i := 0; i < size; i++ {
+		key := fmt.Sprintf("%d", i)
+		keys[i] = key
+		hashes[i] = xxhash.Sum64String(key)
+	}
+	for i := 0; i < size; i++ {
+		key := keys[i]
+		if i == 8 {
+			b.Logf("Instering %d", i)
+		}
+		if ok := h.Store(key, hashes[i], uintptr(i)); !ok {
+			b.Fatalf("Failed to add item %d, %v", i, key)
+		}
+	}
+	b.Logf("%v", h.data)
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		for i := 0; i < size; i++ {
+			key := keys[i]
+			v, ok, _ := h.Load(key, hashes[i])
+			if !ok {
+				b.Fatalf("Failed to find key %v in the hashtable", key)
+			}
+			if v != uintptr(i) {
+				b.Fatalf("Got %v instead of %v from the hashtable. b.N=%d", v, i, i)
+			}
+		}
+	}
+	b.StopTimer()
+	b.Logf("Store collisions %d from %d, max collision chain %d", h.statistics.StoreCollision, h.statistics.Store, h.statistics.MaxCollisions)
+}
+
 func BenchmarkMapMutex(b *testing.B) {
 	keysCount := 100
 	keys := make([]string, keysCount, keysCount)
