@@ -30,7 +30,7 @@ func GetPower2(N int) int {
 // See also https://probablydance.com/2017/02/26/i-wrote-the-fastest-hashtable/
 // and source code https://github.com/skarupke/flat_hash_map/blob/master/flat_hash_map.hpp
 // This function shaves 10% off the Store() CPU consumption
-// Call to moduloSize() is 2x faster than a naive hash % size - 4ns vs 8ns
+// Call to moduloSize() is 4x faster than a naive hash % size - 4ns vs 8ns
 // Can I do it faster by approximating the result? Does it make sense to cache results
 // of modulo for small tables?
 // In C++ I would use a generic

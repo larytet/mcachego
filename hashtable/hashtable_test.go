@@ -406,7 +406,7 @@ func BenchmarkModuloSize(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		result = moduloSize(uint64(i))
 	}
-	if result <= 0 {
+	if result < 0 {
 		b.Fatalf("Got bad modulo result %d", result)
 	}
 
@@ -419,7 +419,7 @@ func BenchmarkModulo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		result = int(i % size)
 	}
-	if result <= 0 {
+	if result < 0 {
 		b.Fatalf("Got bad modulo result %d", result)
 	}
 }
