@@ -158,7 +158,7 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 		// The next line - random memory access - dominates execution time
 		// for tables 100K entries and above
 		// Data cache miss (and memory page miss?) sucks
-		inUse := it.inUse()
+		inUse := inUse(it)
 		if !inUse {
 			// I can swap the first item in the "chain" with this item and improve lookup time for freshly inserted items
 			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
@@ -176,7 +176,7 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 			return true
 		} else {
 			// should be a rare occasion
-			if it.isSameAndInUse(&lookIt) {
+			if isSameAndInUse(it, &lookIt) {
 				h.statistics.StoreMatchingKey += 1
 				return false
 			}
@@ -190,8 +190,8 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 
 // 'other' is usually an automatic variable
 // 'i' is a random address in the hashtable
-func (i *item) isSameAndInUse(other *item) bool {
-	return i.inUse() &&
+func isSameAndInUse(i *item, other *item) bool {
+	return inUse(i) &&
 		(i.hash == other.hash) &&
 		(i.key == other.key)
 }
@@ -199,7 +199,7 @@ func (i *item) isSameAndInUse(other *item) bool {
 // This is by far the most expensive single line in the Load() flow
 // The line is responsible for 80% of the execution time in large hashtables
 // 'i' is a random address in a potentially very large hashtable
-func (i *item) inUse() bool {
+func inUse(i *item) bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
 }
 
@@ -210,7 +210,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ch
 	chainStart = index
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
-		if it.isSameAndInUse(&lookIt) {
+		if isSameAndInUse(it, &lookIt) {
 			h.statistics.FindSuccess += 1
 			return index, collisions > 0, chainStart, true
 		} else {
@@ -256,7 +256,7 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 func (h *Hashtable) GetNext(index int) (nextIndex int, value uintptr, key string, ok bool) {
 	for i := index; i < len(h.data); i++ {
 		it := &h.data[i]
-		if it.inUse() {
+		if inUse(it) {
 			return (i + 1), it.value, it.key, true
 		}
 	}
