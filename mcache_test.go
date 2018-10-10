@@ -394,7 +394,7 @@ func BenchmarkXxhashSum64String(b *testing.B) {
 	}
 }
 
-// 150ns cache.Store()
+// 180ns cache.Store()
 func BenchmarkStore(b *testing.B) {
 	b.ReportAllocs()
 	now := GetTime()
@@ -407,6 +407,30 @@ func BenchmarkStore(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if ok := cache.Store(keys[i], Object(i), now); !ok {
 			b.Fatalf("Failed to add item %d", i)
+		}
+	}
+}
+
+// 160ns cache.Load()
+func BenchmarkLoad(b *testing.B) {
+	b.ReportAllocs()
+	now := GetTime()
+	keys := make([]string, b.N, b.N)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
+	}
+	cache := New(Configuration{Size: b.N, Ttl: TTL, LoadFactor: 50})
+	for i := 0; i < b.N; i++ {
+		if ok := cache.Store(keys[i], Object(i), now); !ok {
+			b.Fatalf("Failed to add item %d", i)
+		}
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if o, _, ok := cache.Load(keys[i]); !ok {
+			b.Fatalf("Failed to find item %d", i)
+		} else if int(o) != i {
+			b.Fatalf("Bad entry %d instead of %d", int(o), i)
 		}
 	}
 }
