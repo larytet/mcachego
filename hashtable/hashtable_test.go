@@ -76,7 +76,7 @@ func BenchmarkSmallMapLookup(b *testing.B) {
 }
 
 func BenchmarkSmallHashtableLookup(b *testing.B) {
-	size := 10
+	size := 100
 	h := New(4*size, 4)
 	keys := make([]string, size, size)
 	hashes := make([]uint64, size, size)
@@ -87,21 +87,19 @@ func BenchmarkSmallHashtableLookup(b *testing.B) {
 	}
 	for i := 0; i < size; i++ {
 		key := keys[i]
-		if i == 8 {
-			b.Logf("Instering %d", i)
-		}
-		if ok := h.Store(key, hashes[i], uintptr(i)); !ok {
+		hash := hashes[i]
+		if ok := h.Store(key, hash, uintptr(i)); !ok {
 			b.Fatalf("Failed to add item %d, %v", i, key)
 		}
 	}
-	b.Logf("%v", h.data)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < size; i++ {
 			key := keys[i]
-			v, ok, _ := h.Load(key, hashes[i])
+			hash := hashes[i]
+			v, ok, _ := h.Load(key, hash)
 			if !ok {
-				b.Fatalf("Failed to find key %v in the hashtable", key)
+				b.Fatalf("Failed to find key %v hash %v in the hashtable", key, hash)
 			}
 			if v != uintptr(i) {
 				b.Fatalf("Got %v instead of %v from the hashtable. b.N=%d", v, i, i)

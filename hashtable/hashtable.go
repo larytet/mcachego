@@ -44,7 +44,7 @@ type Statistics struct {
 	RemoveFailed     uint64
 }
 
-const ITEM_IN_USE_MASK = uint64(1 << 63)
+const ITEM_IN_USE_MASK = (uint64(1) << 63)
 
 // An item in the hashtable. I want this struct to be as small as possible
 // to reduce data cache miss.
@@ -224,6 +224,9 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 	hc := hashContext{it: item{key: key}, size: h.size}
 	index = hc.firstIndex(hash)
 	chainStart = index
+	if key == "3" {
+		//log.Printf("Find %v index=%d %v", hc.it, index, h.data)
+	}
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
 		if it.isSame(&hc.it) {
@@ -236,6 +239,9 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 		}
 	}
 	h.statistics.FindFailed += 1
+	if key == "3" {
+		//log.Printf("Not Found %v", hc.it)
+	}
 	return 0, collisions, chainStart, false
 }
 
@@ -256,8 +262,9 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 		// Swap the found item with the first in the "chain" and improve lookup next time
 		// due to CPU caching
 		if collisions > 0 {
+			tmp := *it
 			h.data[index] = h.data[chainStart]
-			h.data[chainStart] = *it
+			h.data[chainStart] = tmp
 			h.statistics.LoadSwap += 1
 		}
 		return value, true, uint32(uintptr(unsafe.Pointer(it)) - uintptr(unsafe.Pointer(&h.data[0])))
