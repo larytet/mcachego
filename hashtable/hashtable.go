@@ -80,6 +80,7 @@ type Hashtable struct {
 	count         int
 	statistics    Statistics
 	// Number of collisions in the table
+	// At this point the number can only go up
 	collisions int
 	// Resize automatically if not zero
 	ResizeFactor int
@@ -203,7 +204,7 @@ func inUse(i *item) bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
 }
 
-func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ok bool) {
+func (h *Hashtable) find(key string, hash uint64) (index int, ok bool) {
 	hash = hash | ITEM_IN_USE_MASK
 	lookIt := item{key: key, hash: hash}
 	index = h.moduloSize(hash)
@@ -211,7 +212,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ok
 		it := &h.data[index]
 		if isSameAndInUse(it, &lookIt) {
 			h.statistics.FindSuccess += 1
-			return index, collisions > 0, true
+			return index, true
 		} else {
 			// should be  a rare occasion
 			h.statistics.FindCollision += 1
@@ -219,7 +220,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ok
 		}
 	}
 	h.statistics.FindFailed += 1
-	return 0, true, false
+	return 0, false
 }
 
 // Load is not thread safe. There is a race if another tread removes the item
@@ -232,7 +233,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ok
 // Should I define type 'Ref'?
 func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uint32) {
 	h.statistics.Load += 1
-	if index, _, ok := h.find(key, hash); ok {
+	if index, ok := h.find(key, hash); ok {
 		h.statistics.LoadSuccess += 1
 		it := &h.data[index]
 		value = it.value
@@ -273,11 +274,13 @@ func (h *Hashtable) RemoveByRef(ref uint32) {
 
 func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
-	if index, collisions, ok := h.find(key, hash); ok {
+	if index, ok := h.find(key, hash); ok {
 		h.statistics.RemoveSuccess += 1
-		if collisions {
-			h.collisions -= 1
-		}
+		// Return yet another value 'collision' from find() is 10% performance for small tables
+		// TODO: what to do here?
+		//if collisions {
+		//	h.collisions -= 1
+		//}
 		// TODO I can move all colliding items left and find a match
 		// faster next time.
 
