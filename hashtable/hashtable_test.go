@@ -48,9 +48,11 @@ func TestRace(t *testing.T) {
 	}
 }
 
+var SmallTableSize = 100
+
 // Run the same test with the Go map API for comparison
 func BenchmarkSmallMapLookup(b *testing.B) {
-	size := 100
+	size := SmallTableSize
 	keys := make([]string, size, size)
 	for i := 0; i < size; i++ {
 		keys[i] = fmt.Sprintf("%d", size-i)
@@ -76,8 +78,8 @@ func BenchmarkSmallMapLookup(b *testing.B) {
 }
 
 func BenchmarkSmallHashtableLookup(b *testing.B) {
-	size := 100
-	h := New(4*size, 4)
+	size := SmallTableSize
+	h := New(4*size, 64)
 	keys := make([]string, size, size)
 	hashes := make([]uint64, size, size)
 	for i := 0; i < size; i++ {

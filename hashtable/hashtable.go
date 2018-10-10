@@ -224,9 +224,6 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 	hc := hashContext{it: item{key: key}, size: h.size}
 	index = hc.firstIndex(hash)
 	chainStart = index
-	if key == "3" {
-		//log.Printf("Find %v index=%d %v", hc.it, index, h.data)
-	}
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
 		if it.isSame(&hc.it) {
@@ -239,9 +236,6 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collisions int, ch
 		}
 	}
 	h.statistics.FindFailed += 1
-	if key == "3" {
-		//log.Printf("Not Found %v", hc.it)
-	}
 	return 0, collisions, chainStart, false
 }
 
@@ -263,7 +257,7 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 		// due to CPU caching
 		if collisions > 0 {
 			tmp := *it
-			h.data[index] = h.data[chainStart]
+			*it = h.data[chainStart]
 			h.data[chainStart] = tmp
 			h.statistics.LoadSwap += 1
 		}
@@ -367,6 +361,16 @@ func moduloSize(hash uint64, size int) int {
 	switch size {
 	// between 5K to 1M entries are at the top of the swicth
 	// TODO check what the compiler does here
+	case 499:
+		return int(hash % 499)
+	case 97:
+		return int(hash % 97)
+	case 127:
+		return int(hash % 127)
+	case 151:
+		return int(hash % 151)
+	case 197:
+		return int(hash % 197)
 	case 5087:
 		return int(hash % 5087)
 	case 6421:
@@ -443,22 +447,12 @@ func moduloSize(hash uint64, size int) int {
 		return int(hash % 59)
 	case 73:
 		return int(hash % 73)
-	case 97:
-		return int(hash % 97)
-	case 127:
-		return int(hash % 127)
-	case 151:
-		return int(hash % 151)
-	case 197:
-		return int(hash % 197)
 	case 251:
 		return int(hash % 251)
 	case 313:
 		return int(hash % 313)
 	case 397:
 		return int(hash % 397)
-	case 499:
-		return int(hash % 499)
 	case 631:
 		return int(hash % 631)
 	case 797:
