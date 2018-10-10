@@ -203,16 +203,15 @@ func inUse(i *item) bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
 }
 
-func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, chainStart int, ok bool) {
+func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ok bool) {
 	hash = hash | ITEM_IN_USE_MASK
 	lookIt := item{key: key, hash: hash}
 	index = h.moduloSize(hash)
-	chainStart = index
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
 		if isSameAndInUse(it, &lookIt) {
 			h.statistics.FindSuccess += 1
-			return index, collisions > 0, chainStart, true
+			return index, collisions > 0, true
 		} else {
 			// should be  a rare occasion
 			h.statistics.FindCollision += 1
@@ -220,7 +219,7 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ch
 		}
 	}
 	h.statistics.FindFailed += 1
-	return 0, true, chainStart, false
+	return 0, true, false
 }
 
 // Load is not thread safe. There is a race if another tread removes the item
@@ -233,18 +232,18 @@ func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, ch
 // Should I define type 'Ref'?
 func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uint32) {
 	h.statistics.Load += 1
-	if index, collisions, chainStart, ok := h.find(key, hash); ok {
+	if index, _, ok := h.find(key, hash); ok {
 		h.statistics.LoadSuccess += 1
 		it := &h.data[index]
 		value = it.value
 		// Swap the found item with the first in the "chain" and improve lookup next time
 		// due to CPU caching
-		if collisions {
-			tmp := *it
-			*it = h.data[chainStart]
-			h.data[chainStart] = tmp
-			h.statistics.LoadSwap += 1
-		}
+		//if collisions {
+		//	tmp := *it
+		//	*it = h.data[chainStart]
+		//	h.data[chainStart] = tmp
+		//	h.statistics.LoadSwap += 1
+		//}
 		return value, true, uint32(uintptr(unsafe.Pointer(it)) - uintptr(unsafe.Pointer(&h.data[0])))
 	}
 	h.statistics.LoadFailed += 1
@@ -274,7 +273,7 @@ func (h *Hashtable) RemoveByRef(ref uint32) {
 
 func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
-	if index, collisions, _, ok := h.find(key, hash); ok {
+	if index, collisions, ok := h.find(key, hash); ok {
 		h.statistics.RemoveSuccess += 1
 		if collisions {
 			h.collisions -= 1
