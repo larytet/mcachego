@@ -80,7 +80,6 @@ type Hashtable struct {
 	count         int
 	statistics    Statistics
 	// Number of collisions in the table
-	// At this point the number can only go up
 	collisions int
 	// Resize automatically if not zero
 	ResizeFactor int
