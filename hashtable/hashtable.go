@@ -17,7 +17,7 @@ import (
 // * https://medium.com/@ConnorPeet/go-maps-are-not-o-1-91c1e61110bf
 // * https://github.com/larytet/emcpp/blob/master/src/HashTable.h
 
-// So far the performance is ~30% better than the Go built-in map
+// So far the performance for large tables (+100K) is 2x better than the Go built-in map
 // For large tables - 100K+ items - random memory access dominates the performance
 // The idea is probably a dead end unless I introduce more constraints on the key distribution
 // My key is a domain name. There is not much special about domain names.
