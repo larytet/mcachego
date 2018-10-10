@@ -150,9 +150,9 @@ func nextIndex(index int) int {
 // See also https://github.com/golang/go/issues/21195 https://stackoverflow.com/questions/29662003/go-map-with-user-defined-key-with-user-defined-equality
 func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	h.statistics.Store += 1
+	index := h.moduloSize(hash)
 	hash = hash | ITEM_IN_USE_MASK
 	lookIt := item{key: key, hash: hash}
-	index := h.moduloSize(hash)
 	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
@@ -210,10 +210,9 @@ func inUse(i *item) bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
 }
 
-func (h *Hashtable) find(key string, hash uint64) (index int, ok bool) {
+func (h *Hashtable) find(key string, hash uint64, index int) (int, bool) {
 	hash = hash | ITEM_IN_USE_MASK
 	lookIt := item{key: key, hash: hash}
-	index = h.moduloSize(hash)
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
 		if isSameAndInUse(it, &lookIt) {
@@ -239,7 +238,8 @@ func (h *Hashtable) find(key string, hash uint64) (index int, ok bool) {
 // Should I define type 'Ref'?
 func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uint32) {
 	h.statistics.Load += 1
-	if index, ok := h.find(key, hash); ok {
+	index0 := h.moduloSize(hash)
+	if index, ok := h.find(key, hash, index0); ok {
 		h.statistics.LoadSuccess += 1
 		it := &h.data[index]
 		value = it.value
@@ -280,13 +280,14 @@ func (h *Hashtable) RemoveByRef(ref uint32) {
 
 func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {
 	h.statistics.Remove += 1
-	if index, ok := h.find(key, hash); ok {
+	index0 := h.moduloSize(hash)
+	if index, ok := h.find(key, hash, index0); ok {
 		h.statistics.RemoveSuccess += 1
 		// Return yet another value 'collision' from find() is 10% performance for small tables
 		// TODO: what to do here?
-		//if collisions {
-		//	h.collisions -= 1
-		//}
+		if index0 != index { // collision?
+			h.collisions -= 1
+		}
 		// TODO I can move all colliding items left and find a match
 		// faster next time.
 

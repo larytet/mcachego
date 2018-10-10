@@ -193,6 +193,7 @@ func TestHashtable(t *testing.T) {
 		key := fmt.Sprintf("%d", i)
 		v, ok, _ := h.Load(key, xxhash.Sum64String(key))
 		if !ok {
+			t.Logf("%v", h.data)
 			t.Fatalf("Failed to find key %v in the hashtable", key)
 		}
 		if v != uintptr(i) {
