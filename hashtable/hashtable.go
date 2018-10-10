@@ -146,7 +146,8 @@ func nextIndex(index int) int {
 // and remove the existing element before storing a new one. In the golang map this code
 // will require three calls to the hash function
 // A bonus - you choose the hash function and can switch it in the run-time.
-// See also https://github.com/golang/go/issues/21195 https://stackoverflow.com/questions/29662003/go-map-with-user-defined-key-with-user-defined-equality
+// See also https://github.com/golang/go/issues/21195
+// https://stackoverflow.com/questions/29662003/go-map-with-user-defined-key-with-user-defined-equality
 func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	h.statistics.Store += 1
 	index := h.moduloSize(hash)
