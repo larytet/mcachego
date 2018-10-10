@@ -206,6 +206,7 @@ func isSameAndInUse(i *item, other *item) bool {
 // This is by far the most expensive single line in the Load() flow
 // The line is responsible for 80% of the execution time in large hashtables
 // 'i' is a random address in a potentially very large hashtable
+// This function used to be a method of "item" object at cost of 10% of CPU
 func inUse(i *item) bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
 }
