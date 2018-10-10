@@ -327,27 +327,3 @@ func (h *Hashtable) Resize(factor int, maxCollisions int) bool {
 func (h *Hashtable) Collisions() int {
 	return h.collisions
 }
-
-// Using 2^n-1 I have 20% collisions rate
-// A real prime does not improve much
-// See https://stackoverflow.com/questions/21854191/generating-prime-numbers-in-go
-// https://github.com/agis/gofool/blob/master/atkin.go
-func GetPower2Sub1(N int) int {
-	return GetPower2(N) - 1
-}
-
-// Straignt from https://stackoverflow.com/questions/466204/rounding-up-to-next-power-of-2
-// A naive "for i < N i = i << 1" would do the trick as well, but I feel luck today
-// I wonder if the compiler understands the naive version and the assembly ends up with
-// shifst and ORs anyway.
-func GetPower2(N int) int {
-	N--
-	N |= N >> 1
-	N |= N >> 2
-	N |= N >> 4
-	N |= N >> 8
-	N |= N >> 16
-	N |= N >> 32
-	N++
-	return N
-}
