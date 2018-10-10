@@ -361,10 +361,34 @@ func moduloSize(hash uint64, size int) int {
 	switch size {
 	// between 5K to 1M entries are at the top of the swicth
 	// TODO check what the compiler does here
-	case 499:
-		return int(hash % 499)
-	case 397:
-		return int(hash % 397)
+	case 0:
+		return 0
+	case 2:
+		return int(hash % 2)
+	case 3:
+		return int(hash % 3)
+	case 5:
+		return int(hash % 5)
+	case 7:
+		return int(hash % 7)
+	case 11:
+		return int(hash % 11)
+	case 13:
+		return int(hash % 13)
+	case 17:
+		return int(hash % 17)
+	case 23:
+		return int(hash % 23)
+	case 29:
+		return int(hash % 29)
+	case 37:
+		return int(hash % 37)
+	case 47:
+		return int(hash % 47)
+	case 59:
+		return int(hash % 59)
+	case 73:
+		return int(hash % 73)
 	case 97:
 		return int(hash % 97)
 	case 127:
@@ -373,6 +397,32 @@ func moduloSize(hash uint64, size int) int {
 		return int(hash % 151)
 	case 197:
 		return int(hash % 197)
+	case 251:
+		return int(hash % 251)
+	case 313:
+		return int(hash % 313)
+	case 397:
+		return int(hash % 397)
+	case 499:
+		return int(hash % 499)
+	case 631:
+		return int(hash % 631)
+	case 797:
+		return int(hash % 797)
+	case 1009:
+		return int(hash % 1009)
+	case 1259:
+		return int(hash % 1259)
+	case 1597:
+		return int(hash % 1597)
+	case 2011:
+		return int(hash % 2011)
+	case 2539:
+		return int(hash % 2539)
+	case 3203:
+		return int(hash % 3203)
+	case 4027:
+		return int(hash % 4027)
 	case 5087:
 		return int(hash % 5087)
 	case 6421:
@@ -421,56 +471,6 @@ func moduloSize(hash uint64, size int) int {
 		return int(hash % 823117)
 	case 1037059:
 		return int(hash % 1037059)
-	case 0:
-		return 0
-	case 2:
-		return int(hash % 2)
-	case 3:
-		return int(hash % 3)
-	case 5:
-		return int(hash % 5)
-	case 7:
-		return int(hash % 7)
-	case 11:
-		return int(hash % 11)
-	case 13:
-		return int(hash % 13)
-	case 17:
-		return int(hash % 17)
-	case 23:
-		return int(hash % 23)
-	case 29:
-		return int(hash % 29)
-	case 37:
-		return int(hash % 37)
-	case 47:
-		return int(hash % 47)
-	case 59:
-		return int(hash % 59)
-	case 73:
-		return int(hash % 73)
-	case 251:
-		return int(hash % 251)
-	case 313:
-		return int(hash % 313)
-	case 631:
-		return int(hash % 631)
-	case 797:
-		return int(hash % 797)
-	case 1009:
-		return int(hash % 1009)
-	case 1259:
-		return int(hash % 1259)
-	case 1597:
-		return int(hash % 1597)
-	case 2011:
-		return int(hash % 2011)
-	case 2539:
-		return int(hash % 2539)
-	case 3203:
-		return int(hash % 3203)
-	case 4027:
-		return int(hash % 4027)
 	case 1306601:
 		return int(hash % 1306601)
 	case 1646237:
