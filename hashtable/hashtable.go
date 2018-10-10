@@ -194,6 +194,12 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 func isSameAndInUse(i *item, other *item) bool {
 	return inUse(i) &&
 		(i.hash == other.hash) &&
+
+		// this line consumes 50% of the CPU time
+		// for tables smaller than a memory page
+		// comparison of a short string
+		// for long keys the line will dominate CPU
+		// consumption. TODO Check RelyOnHash?
 		(i.key == other.key)
 }
 
