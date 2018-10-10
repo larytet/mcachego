@@ -73,21 +73,6 @@ func (i *item) reset() {
 	i.value = 0
 }
 
-// 'other' is usually an automatic variable
-// 'i' is a random address in the hashtable
-func (i *item) isSame(other *item) bool {
-	return i.inUse() && other.inUse() &&
-		(i.hash == other.hash) &&
-		(i.key == other.key)
-}
-
-// This is by far the most expensive single line in the Load() flow
-// The line is responsible for 80% of the execution time in large hashtables
-// 'i' is a random address in a potentially very large hashtable
-func (i *item) inUse() bool {
-	return (i.hash & ITEM_IN_USE_MASK) != 0
-}
-
 // This is copy&paste from https://github.com/larytet/emcpp/blob/master/src/HashTable.h
 type Hashtable struct {
 	size          int
@@ -144,28 +129,8 @@ func (h *Hashtable) Reset() {
 	}
 }
 
-type hashContext struct {
-	it         item
-	index      int
-	moduloSize ModuloSize
-}
-
-// This is naive. What I want to do here is sharding based on 8 LSBs
-// Bad choise of "size" will cause collisions
-// Collision attack is possible here
-// I should rotate hash functions
-// See also https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
-func (hc *hashContext) firstIndex(hash uint64) (index int) {
-	hc.it.hash = hash | ITEM_IN_USE_MASK
-	// The modulo 'hash % hc.size' consumes 50% of the lookup function if the table fits L3 cache
-	// and 20% of the function for large tables. I need any help I can get here
-	hc.index = hc.moduloSize(hash)
-	return hc.index
-}
-
-func (hc *hashContext) nextIndex() (index int) {
-	hc.index += 1
-	return hc.index
+func nextIndex(index int) int {
+	return index + 1
 }
 
 // Store a key:value pair in the hashtable
@@ -184,9 +149,9 @@ func (hc *hashContext) nextIndex() (index int) {
 // See also https://github.com/golang/go/issues/21195 https://stackoverflow.com/questions/29662003/go-map-with-user-defined-key-with-user-defined-equality
 func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	h.statistics.Store += 1
-
-	hc := hashContext{it: item{key: key}, moduloSize: h.moduloSize}
-	index := hc.firstIndex(hash)
+	hash = hash | ITEM_IN_USE_MASK
+	lookIt := item{key: key, hash: hash}
+	index := h.moduloSize(hash)
 	var collisions int
 	for collisions = 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
@@ -199,7 +164,7 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 			h.statistics.StoreSuccess += 1
 			it.key = key
-			it.hash = hc.it.hash
+			it.hash = hash
 			it.value = value
 			if collisions > 0 {
 				if h.statistics.MaxCollisions < uint64(collisions) {
@@ -211,31 +176,47 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 			return true
 		} else {
 			// should be a rare occasion
-			if it.isSame(&hc.it) {
+			if it.isSameAndInUse(&lookIt) {
 				h.statistics.StoreMatchingKey += 1
 				return false
 			}
 			h.statistics.StoreCollision += 1
-			index = hc.nextIndex()
+			index = nextIndex(index)
 		}
 	}
-	log.Printf("Failed to add '%v':'%v', col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, hc.it.hash, h.size)
+	log.Printf("Failed to add '%v':'%v', col=%d:%d, hash=%x size=%d", key, value, collisions, h.collisions, lookIt.hash, h.size)
 	return false
 }
 
+// 'other' is usually an automatic variable
+// 'i' is a random address in the hashtable
+func (i *item) isSameAndInUse(other *item) bool {
+	return i.inUse() &&
+		(i.hash == other.hash) &&
+		(i.key == other.key)
+}
+
+// This is by far the most expensive single line in the Load() flow
+// The line is responsible for 80% of the execution time in large hashtables
+// 'i' is a random address in a potentially very large hashtable
+func (i *item) inUse() bool {
+	return (i.hash & ITEM_IN_USE_MASK) != 0
+}
+
 func (h *Hashtable) find(key string, hash uint64) (index int, collision bool, chainStart int, ok bool) {
-	hc := hashContext{it: item{key: key}, moduloSize: h.moduloSize}
-	index = hc.firstIndex(hash)
+	hash = hash | ITEM_IN_USE_MASK
+	lookIt := item{key: key, hash: hash}
+	index = h.moduloSize(hash)
 	chainStart = index
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
-		if it.isSame(&hc.it) {
+		if it.isSameAndInUse(&lookIt) {
 			h.statistics.FindSuccess += 1
 			return index, collisions > 0, chainStart, true
 		} else {
 			// should be  a rare occasion
 			h.statistics.FindCollision += 1
-			index = hc.nextIndex()
+			index = nextIndex(index)
 		}
 	}
 	h.statistics.FindFailed += 1
