@@ -787,3 +787,594 @@ func getSize(N int) int {
 	// if there is no match in the table of primes I fallback to the size (2^n-1)
 	return GetPower2Sub1(N)
 }
+
+func moduloSize_2(hash uint64) int {
+	return hash % 2
+}
+func moduloSize_3(hash uint64) int {
+	return hash % 3
+}
+func moduloSize_5(hash uint64) int {
+	return hash % 5
+}
+func moduloSize_7(hash uint64) int {
+	return hash % 7
+}
+func moduloSize_11(hash uint64) int {
+	return hash % 11
+}
+func moduloSize_13(hash uint64) int {
+	return hash % 13
+}
+func moduloSize_17(hash uint64) int {
+	return hash % 17
+}
+func moduloSize_23(hash uint64) int {
+	return hash % 23
+}
+func moduloSize_29(hash uint64) int {
+	return hash % 29
+}
+func moduloSize_37(hash uint64) int {
+	return hash % 37
+}
+func moduloSize_47(hash uint64) int {
+	return hash % 47
+}
+
+func moduloSize_59(hash uint64) int {
+	return hash % 59
+}
+func moduloSize_73(hash uint64) int {
+	return hash % 73
+}
+func moduloSize_97(hash uint64) int {
+	return hash % 97
+}
+func moduloSize_127(hash uint64) int {
+	return hash % 127
+}
+func moduloSize_151(hash uint64) int {
+	return hash % 151
+}
+func moduloSize_197(hash uint64) int {
+	return hash % 197
+}
+func moduloSize_251(hash uint64) int {
+	return hash % 251
+}
+func moduloSize_313(hash uint64) int {
+	return hash % 313
+}
+func moduloSize_397(hash uint64) int {
+	return hash % 397
+}
+
+func moduloSize_499(hash uint64) int {
+	return hash % 499
+}
+func moduloSize_631(hash uint64) int {
+	return hash % 631
+}
+func moduloSize_797(hash uint64) int {
+	return hash % 797
+}
+func moduloSize_1009(hash uint64) int {
+	return hash % 1009
+}
+func moduloSize_1259(hash uint64) int {
+	return hash % 1259
+}
+func moduloSize_1597(hash uint64) int {
+	return hash % 1597
+}
+func moduloSize_2011(hash uint64) int {
+	return hash % 2011
+}
+func moduloSize_2539(hash uint64) int {
+	return hash % 2539
+}
+
+func moduloSize_3203(hash uint64) int {
+	return hash % 3203
+}
+func moduloSize_4027(hash uint64) int {
+	return hash % 4027
+}
+func moduloSize_5087(hash uint64) int {
+	return hash % 5087
+}
+func moduloSize_6421(hash uint64) int {
+	return hash % 6421
+}
+func moduloSize_8089(hash uint64) int {
+	return hash % 8089
+}
+func moduloSize_10193(hash uint64) int {
+	return hash % 10193
+}
+func moduloSize_12853(hash uint64) int {
+	return hash % 12853
+}
+func moduloSize_16193(hash uint64) int {
+	return hash % 16193
+}
+
+func moduloSize_20399(hash uint64) int {
+	return hash % 20399
+}
+func moduloSize_25717(hash uint64) int {
+	return hash % 25717
+}
+func moduloSize_32401(hash uint64) int {
+	return hash % 32401
+}
+func moduloSize_40823(hash uint64) int {
+	return hash % 40823
+}
+func moduloSize_51437(hash uint64) int {
+	return hash % 51437
+}
+func moduloSize_64811(hash uint64) int {
+	return hash % 64811
+}
+func moduloSize_81649(hash uint64) int {
+	return hash % 81649
+}
+
+func moduloSize_102877(hash uint64) int {
+	return hash % 102877
+}
+func moduloSize_129607(hash uint64) int {
+	return hash % 129607
+}
+func moduloSize_163307(hash uint64) int {
+	return hash % 163307
+}
+func moduloSize_205759(hash uint64) int {
+	return hash % 205759
+}
+func moduloSize_259229(hash uint64) int {
+	return hash % 259229
+}
+func moduloSize_326617(hash uint64) int {
+	return hash % 326617
+}
+
+func moduloSize_411527(hash uint64) int {
+	return hash % 411527
+}
+func moduloSize_518509(hash uint64) int {
+	return hash % 518509
+}
+func moduloSize_653267(hash uint64) int {
+	return hash % 653267
+}
+func moduloSize_823117(hash uint64) int {
+	return hash % 823117
+}
+func moduloSize_1037059(hash uint64) int {
+	return hash % 1037059
+}
+func moduloSize_1306601(hash uint64) int {
+	return hash % 1306601
+}
+
+func moduloSize_1646237(hash uint64) int {
+	return hash % 1646237
+}
+func moduloSize_2074129(hash uint64) int {
+	return hash % 2074129
+}
+func moduloSize_2613229(hash uint64) int {
+	return hash % 2613229
+}
+func moduloSize_3292489(hash uint64) int {
+	return hash % 3292489
+}
+func moduloSize_4148279(hash uint64) int {
+	return hash % 4148279
+}
+func moduloSize_5226491(hash uint64) int {
+	return hash % 5226491
+}
+
+func moduloSize_6584983(hash uint64) int {
+	return hash % 6584983
+}
+func moduloSize_8296553(hash uint64) int {
+	return hash % 8296553
+}
+func moduloSize_10453007(hash uint64) int {
+	return hash % 10453007
+}
+func moduloSize_13169977(hash uint64) int {
+	return hash % 13169977
+}
+func moduloSize_16593127(hash uint64) int {
+	return hash % 16593127
+}
+func moduloSize_20906033(hash uint64) int {
+	return hash % 20906033
+}
+
+func moduloSize_26339969(hash uint64) int {
+	return hash % 26339969
+}
+func moduloSize_33186281(hash uint64) int {
+	return hash % 33186281
+}
+func moduloSize_41812097(hash uint64) int {
+	return hash % 41812097
+}
+func moduloSize_52679969(hash uint64) int {
+	return hash % 52679969
+}
+func moduloSize_66372617(hash uint64) int {
+	return hash % 66372617
+}
+
+func moduloSize_83624237(hash uint64) int {
+	return hash % 83624237
+}
+func moduloSize_105359939(hash uint64) int {
+	return hash % 105359939
+}
+func moduloSize_132745199(hash uint64) int {
+	return hash % 132745199
+}
+func moduloSize_167248483(hash uint64) int {
+	return hash % 167248483
+}
+func moduloSize_210719881(hash uint64) int {
+	return hash % 210719881
+}
+
+func moduloSize_265490441(hash uint64) int {
+	return hash % 265490441
+}
+func moduloSize_334496971(hash uint64) int {
+	return hash % 334496971
+}
+func moduloSize_421439783(hash uint64) int {
+	return hash % 421439783
+}
+func moduloSize_530980861(hash uint64) int {
+	return hash % 530980861
+}
+func moduloSize_668993977(hash uint64) int {
+	return hash % 668993977
+}
+
+func moduloSize_842879579(hash uint64) int {
+	return hash % 842879579
+}
+func moduloSize_1061961721(hash uint64) int {
+	return hash % 1061961721
+}
+func moduloSize_1337987929(hash uint64) int {
+	return hash % 1337987929
+}
+func moduloSize_1685759167(hash uint64) int {
+	return hash % 1685759167
+}
+func moduloSize_2123923447(hash uint64) int {
+	return hash % 2123923447
+}
+
+func moduloSize_2675975881(hash uint64) int {
+	return hash % 2675975881
+}
+func moduloSize_3371518343(hash uint64) int {
+	return hash % 3371518343
+}
+func moduloSize_4247846927(hash uint64) int {
+	return hash % 4247846927
+}
+func moduloSize_5351951779(hash uint64) int {
+	return hash % 5351951779
+}
+func moduloSize_6743036717(hash uint64) int {
+	return hash % 6743036717
+}
+
+func moduloSize_8495693897(hash uint64) int {
+	return hash % 8495693897
+}
+func moduloSize_10703903591(hash uint64) int {
+	return hash % 10703903591
+}
+func moduloSize_13486073473(hash uint64) int {
+	return hash % 13486073473
+}
+func moduloSize_16991387857(hash uint64) int {
+	return hash % 16991387857
+}
+
+func moduloSize_21407807219(hash uint64) int {
+	return hash % 21407807219
+}
+func moduloSize_26972146961(hash uint64) int {
+	return hash % 26972146961
+}
+func moduloSize_33982775741(hash uint64) int {
+	return hash % 33982775741
+}
+func moduloSize_42815614441(hash uint64) int {
+	return hash % 42815614441
+}
+
+func moduloSize_53944293929(hash uint64) int {
+	return hash % 53944293929
+}
+func moduloSize_67965551447(hash uint64) int {
+	return hash % 67965551447
+}
+func moduloSize_85631228929(hash uint64) int {
+	return hash % 85631228929
+}
+func moduloSize_107888587883(hash uint64) int {
+	return hash % 107888587883
+}
+
+func moduloSize_135931102921(hash uint64) int {
+	return hash % 135931102921
+}
+func moduloSize_171262457903(hash uint64) int {
+	return hash % 171262457903
+}
+func moduloSize_215777175787(hash uint64) int {
+	return hash % 215777175787
+}
+func moduloSize_271862205833(hash uint64) int {
+	return hash % 271862205833
+}
+
+func moduloSize_342524915839(hash uint64) int {
+	return hash % 342524915839
+}
+func moduloSize_431554351609(hash uint64) int {
+	return hash % 431554351609
+}
+func moduloSize_543724411781(hash uint64) int {
+	return hash % 543724411781
+}
+func moduloSize_685049831731(hash uint64) int {
+	return hash % 685049831731
+}
+
+func moduloSize_863108703229(hash uint64) int {
+	return hash % 863108703229
+}
+func moduloSize_1087448823553(hash uint64) int {
+	return hash % 1087448823553
+}
+func moduloSize_1370099663459(hash uint64) int {
+	return hash % 1370099663459
+}
+func moduloSize_1726217406467(hash uint64) int {
+	return hash % 1726217406467
+}
+
+func moduloSize_2174897647073(hash uint64) int {
+	return hash % 2174897647073
+}
+func moduloSize_2740199326961(hash uint64) int {
+	return hash % 2740199326961
+}
+func moduloSize_3452434812973(hash uint64) int {
+	return hash % 3452434812973
+}
+func moduloSize_4349795294267(hash uint64) int {
+	return hash % 4349795294267
+}
+
+func moduloSize_5480398654009(hash uint64) int {
+	return hash % 5480398654009
+}
+func moduloSize_6904869625999(hash uint64) int {
+	return hash % 6904869625999
+}
+func moduloSize_8699590588571(hash uint64) int {
+	return hash % 8699590588571
+}
+func moduloSize_10960797308051(hash uint64) int {
+	return hash % 10960797308051
+}
+
+func moduloSize_13809739252051(hash uint64) int {
+	return hash % 13809739252051
+}
+func moduloSize_17399181177241(hash uint64) int {
+	return hash % 17399181177241
+}
+func moduloSize_21921594616111(hash uint64) int {
+	return hash % 21921594616111
+}
+func moduloSize_27619478504183(hash uint64) int {
+	return hash % 27619478504183
+}
+
+func moduloSize_34798362354533(hash uint64) int {
+	return hash % 34798362354533
+}
+func moduloSize_43843189232363(hash uint64) int {
+	return hash % 43843189232363
+}
+func moduloSize_55238957008387(hash uint64) int {
+	return hash % 55238957008387
+}
+func moduloSize_69596724709081(hash uint64) int {
+	return hash % 69596724709081
+}
+
+func moduloSize_87686378464759(hash uint64) int {
+	return hash % 87686378464759
+}
+func moduloSize_110477914016779(hash uint64) int {
+	return hash % 110477914016779
+}
+func moduloSize_139193449418173(hash uint64) int {
+	return hash % 139193449418173
+}
+
+func moduloSize_175372756929481(hash uint64) int {
+	return hash % 175372756929481
+}
+func moduloSize_220955828033581(hash uint64) int {
+	return hash % 220955828033581
+}
+func moduloSize_278386898836457(hash uint64) int {
+	return hash % 278386898836457
+}
+
+func moduloSize_350745513859007(hash uint64) int {
+	return hash % 350745513859007
+}
+func moduloSize_441911656067171(hash uint64) int {
+	return hash % 441911656067171
+}
+func moduloSize_556773797672909(hash uint64) int {
+	return hash % 556773797672909
+}
+
+func moduloSize_701491027718027(hash uint64) int {
+	return hash % 701491027718027
+}
+func moduloSize_883823312134381(hash uint64) int {
+	return hash % 883823312134381
+}
+func moduloSize_1113547595345903(hash uint64) int {
+	return hash % 1113547595345903
+}
+
+func moduloSize_1402982055436147(hash uint64) int {
+	return hash % 1402982055436147
+}
+func moduloSize_1767646624268779(hash uint64) int {
+	return hash % 1767646624268779
+}
+func moduloSize_2227095190691797(hash uint64) int {
+	return hash % 2227095190691797
+}
+
+func moduloSize_2805964110872297(hash uint64) int {
+	return hash % 2805964110872297
+}
+func moduloSize_3535293248537579(hash uint64) int {
+	return hash % 3535293248537579
+}
+func moduloSize_4454190381383713(hash uint64) int {
+	return hash % 4454190381383713
+}
+
+func moduloSize_5611928221744609(hash uint64) int {
+	return hash % 5611928221744609
+}
+func moduloSize_7070586497075177(hash uint64) int {
+	return hash % 7070586497075177
+}
+func moduloSize_8908380762767489(hash uint64) int {
+	return hash % 8908380762767489
+}
+
+func moduloSize_11223856443489329(hash uint64) int {
+	return hash % 11223856443489329
+}
+func moduloSize_14141172994150357(hash uint64) int {
+	return hash % 14141172994150357
+}
+func moduloSize_17816761525534927(hash uint64) int {
+	return hash % 17816761525534927
+}
+
+func moduloSize_22447712886978529(hash uint64) int {
+	return hash % 22447712886978529
+}
+func moduloSize_28282345988300791(hash uint64) int {
+	return hash % 28282345988300791
+}
+func moduloSize_35633523051069991(hash uint64) int {
+	return hash % 35633523051069991
+}
+
+func moduloSize_44895425773957261(hash uint64) int {
+	return hash % 44895425773957261
+}
+func moduloSize_56564691976601587(hash uint64) int {
+	return hash % 56564691976601587
+}
+func moduloSize_71267046102139967(hash uint64) int {
+	return hash % 71267046102139967
+}
+
+func moduloSize_89790851547914507(hash uint64) int {
+	return hash % 89790851547914507
+}
+func moduloSize_113129383953203213(hash uint64) int {
+	return hash % 113129383953203213
+}
+func moduloSize_142534092204280003(hash uint64) int {
+	return hash % 142534092204280003
+}
+
+func moduloSize_179581703095829107(hash uint64) int {
+	return hash % 179581703095829107
+}
+func moduloSize_226258767906406483(hash uint64) int {
+	return hash % 226258767906406483
+}
+func moduloSize_285068184408560057(hash uint64) int {
+	return hash % 285068184408560057
+}
+
+func moduloSize_359163406191658253(hash uint64) int {
+	return hash % 359163406191658253
+}
+func moduloSize_452517535812813007(hash uint64) int {
+	return hash % 452517535812813007
+}
+func moduloSize_570136368817120201(hash uint64) int {
+	return hash % 570136368817120201
+}
+
+func moduloSize_718326812383316683(hash uint64) int {
+	return hash % 718326812383316683
+}
+func moduloSize_905035071625626043(hash uint64) int {
+	return hash % 905035071625626043
+}
+func moduloSize_1140272737634240411(hash uint64) int {
+	return hash % 1140272737634240411
+}
+
+func moduloSize_1436653624766633509(hash uint64) int {
+	return hash % 1436653624766633509
+}
+func moduloSize_1810070143251252131(hash uint64) int {
+	return hash % 1810070143251252131
+}
+func moduloSize_2280545475268481167(hash uint64) int {
+	return hash % 2280545475268481167
+}
+
+func moduloSize_2873307249533267101(hash uint64) int {
+	return hash % 2873307249533267101
+}
+func moduloSize_3620140286502504283(hash uint64) int {
+	return hash % 3620140286502504283
+}
+func moduloSize_4561090950536962147(hash uint64) int {
+	return hash % 4561090950536962147
+}
+
+func moduloSize_5746614499066534157(hash uint64) int {
+	return hash % 5746614499066534157
+}
+func moduloSize_7240280573005008577(hash uint64) int {
+	return hash % 7240280573005008577
+}
+
+func moduloSize_9122181901073924329(hash uint64) int {
+	return hash % 9122181901073924329
+}
