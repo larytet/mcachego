@@ -1,4 +1,4 @@
-package xorshift64star
+package xorShift64star
 
 type XorShift64Star struct {
 	s uint64
