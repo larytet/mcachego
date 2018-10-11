@@ -48,6 +48,25 @@ func TestRace(t *testing.T) {
 	}
 }
 
+func TestModulo(t *testing.T) {
+	var testNumber = uint64(1) << 63
+	for _, prime := range PrimeList {
+		size := getSize(prime)
+		if size != prime {
+			t.Fatalf("Expected %d got %d", prime, size)
+		}
+		moduloSize := getModuloSizeFunction(size)
+		if moduloSize == nil {
+			t.Fatalf("Got nill for %d", prime)
+		}
+		modulo := moduloSize(testNumber)
+		expectedModulo := int(testNumber % uint64(prime))
+		if modulo != expectedModulo {
+			t.Fatalf("Got %d instead for %d", modulo, expectedModulo)
+		}
+	}
+}
+
 var SmallTableSize = 100
 
 // Run the same test with the Go map API for comparison
