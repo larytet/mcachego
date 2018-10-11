@@ -208,23 +208,6 @@ func BenchmarkHashFnv(b *testing.B) {
 	}
 }
 
-// 10ns/allocation - suprisingly expensive
-// 32/64 bits compare and swap do not impact the performance
-func BenchmarkPoolAlloc(b *testing.B) {
-	b.ReportAllocs()
-	poolSize := 10 * 1000 * 1000
-	pool := unsafepool.New(reflect.TypeOf(new(MyData)), poolSize)
-	b.N = poolSize
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_, ok := pool.Alloc()
-		if !ok {
-			b.Fatalf("Failed to allocate an object from the pool %d", i)
-		}
-	}
-}
-
 func BenchmarkStackAllocationMap(b *testing.B) {
 	now := GetTime()
 	mapSize := 10 * 1000 * 1000
@@ -250,25 +233,6 @@ func BenchmarkFifo(b *testing.B) {
 		ok := fifo.add(string(i))
 		if !ok {
 			b.Fatalf("Failed to add an object to the FIFO %d", i)
-		}
-	}
-}
-
-func BenchmarkPoolAllocFree(b *testing.B) {
-	b.ReportAllocs()
-	poolSize := 10 * 1000 * 1000
-	pool := unsafepool.New(reflect.TypeOf(new(MyData)), poolSize)
-	b.N = poolSize
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		p, ok := pool.Alloc()
-		if !ok {
-			b.Fatalf("Failed to allocate an object from the pool %d", i)
-		}
-		ok = pool.Free(p)
-		if !ok {
-			b.Fatalf("Failed to free an object to the pool %d", i)
 		}
 	}
 }
