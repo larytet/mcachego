@@ -166,11 +166,10 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 		// Data cache miss (and memory page miss?) sucks
 		inUse := inUse(it)
 		if !inUse {
-			// TODO How can I am sure that the newly added item is in the possible best slot
+			// TODO How can I make sure that the newly added item is in the possible best slot
 			// for the following search? I can not just swap the elements because the best slot
 			// can be occupied by an item from a different collision chain. I limit length of the
-			// collisions chains. I cam mark items inserted by the linear probe (not in the
-			// perfect position)
+			// collisions chains.
 			h.statistics.StoreSuccess += 1
 			it.key = key
 			it.hash = hash
