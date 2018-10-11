@@ -6,6 +6,8 @@ import (
 	"unsafe"
 )
 
+// This is a fast (<4ns) Free/Alloc unsafe.Pointer memory pool
+
 type Statistics struct {
 	Alloc              uint64
 	AllocLockCongested uint64
@@ -76,11 +78,38 @@ func (p *Pool) Reset() {
 	p.statistics.MinAvailability = uint64(p.objectCount)
 }
 
-// Allocate a block from the pool
 func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
+	p.statistics.Alloc += 1
+	top := p.top - 1
+	if top >= 0 {
+		if p.statistics.MinAvailability > uint64(top) {
+			p.statistics.MinAvailability = uint64(top)
+		}
+		p.top = top
+		return p.stack[top], true
+	}
+	return nil, false
+}
+
+func (p *Pool) Free(ptr unsafe.Pointer) bool {
+	// I want a quick test that the pointer makes sense
+	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
+		p.statistics.FreeBadAddress += 1
+		return false
+	}
+	p.statistics.Free += 1
+	top := p.top
+	p.stack[top] = ptr
+	p.top = top + 1
+	return true
+}
+
+// Allocate a block from the pool
+func (p *Pool) AllocSync() (ptr unsafe.Pointer, ok bool) {
 	p.statistics.Alloc += 1
 	for p.top > 0 {
 		top := p.top
+		// CompareAndSwap dominates the CPU cycles
 		if atomic.CompareAndSwapInt32(&p.top, top, top-1) {
 			// success, I decremented p.top
 			if p.statistics.MinAvailability > uint64(top) {
@@ -97,7 +126,7 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 // Return previously allocated block to the pool
 // The pool does not protect agains double free. I could mark the blocks
 // as freed/allocated. Probably this is way too C/C++
-func (p *Pool) Free(ptr unsafe.Pointer) bool {
+func (p *Pool) FreeSync(ptr unsafe.Pointer) bool {
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
 		p.statistics.FreeBadAddress += 1
 		return false
