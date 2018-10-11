@@ -5,11 +5,11 @@ import (
 	"github.com/cespare/xxhash"
 	"math"
 	"math/rand"
+	"mcachego/hashtable/xorshift64star"
 	"runtime"
 	"sync"
 	"testing"
 	"unsafe"
-	"xorShift64star"
 )
 
 type A struct {
