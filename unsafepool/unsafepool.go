@@ -78,6 +78,8 @@ func (p *Pool) Reset() {
 	p.statistics.MinAvailability = uint64(p.objectCount)
 }
 
+// Allocate a block from the pool
+// This API is not thread safe. ~3ns
 func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	p.statistics.Alloc += 1
 	top := p.top - 1
@@ -91,6 +93,8 @@ func (p *Pool) Alloc() (ptr unsafe.Pointer, ok bool) {
 	return nil, false
 }
 
+// Return previously allocated block to the pool
+// This API is not thread safe ~4ns
 func (p *Pool) Free(ptr unsafe.Pointer) bool {
 	// I want a quick test that the pointer makes sense
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
@@ -105,6 +109,7 @@ func (p *Pool) Free(ptr unsafe.Pointer) bool {
 }
 
 // Allocate a block from the pool
+// This API is thread safe. ~10ns
 func (p *Pool) AllocSync() (ptr unsafe.Pointer, ok bool) {
 	p.statistics.Alloc += 1
 	for p.top > 0 {
@@ -126,6 +131,7 @@ func (p *Pool) AllocSync() (ptr unsafe.Pointer, ok bool) {
 // Return previously allocated block to the pool
 // The pool does not protect agains double free. I could mark the blocks
 // as freed/allocated. Probably this is way too C/C++
+// This API is thread safe. ~18ns
 func (p *Pool) FreeSync(ptr unsafe.Pointer) bool {
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
 		p.statistics.FreeBadAddress += 1
