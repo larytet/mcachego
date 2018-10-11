@@ -92,8 +92,8 @@ func BenchmarkHashtableLoadMutlithread(b *testing.B) {
 	if b.N < threads {
 		threads = 1
 	}
-	b.ResetTimer()
 	ch := make(chan int, threads)
+	b.ResetTimer()
 	for i := 0; i < b.N; i += (b.N / threads) {
 		go func(start, count int) {
 			for j := start; j < (start + count); j++ {
