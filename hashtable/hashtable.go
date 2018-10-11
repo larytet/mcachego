@@ -150,6 +150,8 @@ func nextIndex(index int) int {
 // https://stackoverflow.com/questions/29662003/go-map-with-user-defined-key-with-user-defined-equality
 func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 	h.statistics.Store += 1
+	// I used a small struct HashContext with a couple of "methods" nextIndex/init/..
+	// Appears that calling "methods" impacts performance (prevents inlining in Golang ?)
 	index := h.moduloSize(hash)
 	hash = hash | ITEM_IN_USE_MASK
 	lookIt := item{key: key, hash: hash}
@@ -244,14 +246,14 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 		h.statistics.LoadSuccess += 1
 		it := &h.data[index]
 		value = it.value
-		// Swap the found item with the first in the "chain" and improve lookup next time
-		// due to CPU caching
-		//if collisions {
-		//	tmp := *it
-		//	*it = h.data[chainStart]
-		//	h.data[chainStart] = tmp
-		//	h.statistics.LoadSwap += 1
-		//}
+		// Swap the found item with the first in the "chain" and improve lookup for
+		//  the same element next time
+		if index0 != index {
+			tmp := *it
+			*it = h.data[index0]
+			h.data[index0] = tmp
+			h.statistics.LoadSwap += 1
+		}
 		return value, true, uint32(uintptr(unsafe.Pointer(it)) - uintptr(unsafe.Pointer(&h.data[0])))
 	}
 	h.statistics.LoadFailed += 1
