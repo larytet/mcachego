@@ -10,10 +10,13 @@ import (
 
 type Statistics struct {
 	Alloc              uint64
+	AllocSync          uint64
 	AllocLockCongested uint64
 	Free               uint64
 	FreeBadAddress     uint64
+	FreeSync           uint64
 	FreeLockCongested  uint64
+	FreeSyncBadAddress uint64
 	MinAvailability    uint64
 }
 
@@ -111,7 +114,7 @@ func (p *Pool) Free(ptr uintptr) bool {
 // Allocate a block from the pool
 // This API is thread safe. ~10ns
 func (p *Pool) AllocSync() (ptr uintptr, ok bool) {
-	p.statistics.Alloc += 1
+	p.statistics.AllocSync += 1
 	for p.top > 0 {
 		top := p.top
 		// CompareAndSwap dominates the CPU cycles
@@ -134,10 +137,10 @@ func (p *Pool) AllocSync() (ptr uintptr, ok bool) {
 // This API is thread safe. ~18ns
 func (p *Pool) FreeSync(ptr uintptr) bool {
 	if (uintptr(ptr) < p.minAddr) || (uintptr(ptr) > p.maxAddr) {
-		p.statistics.FreeBadAddress += 1
+		p.statistics.FreeSyncBadAddress += 1
 		return false
 	}
-	p.statistics.Free += 1
+	p.statistics.FreeSync += 1
 	for {
 		top := p.top
 		if atomic.CompareAndSwapInt32(&p.top, top, top+1) {
