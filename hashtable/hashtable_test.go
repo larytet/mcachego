@@ -3,6 +3,7 @@ package hashtable
 import (
 	"fmt"
 	"github.com/cespare/xxhash"
+	"log"
 	"math"
 	"math/rand"
 	"mcachego/hashtable/xorshift64star"
@@ -65,6 +66,55 @@ func TestModulo(t *testing.T) {
 			t.Fatalf("Got %d instead for %d", modulo, expectedModulo)
 		}
 	}
+}
+
+func BenchmarkHashtableLoadMutlithread(b *testing.B) {
+	b.ReportAllocs()
+	h := New(2*b.N, 64)
+	keys := make([]string, b.N, b.N)
+	hashes := make([]uint64, b.N, b.N)
+	for i := 0; i < b.N; i++ {
+		key := fmt.Sprintf("%d", b.N-i)
+		keys[i] = key
+		hashes[i] = xxhash.Sum64String(key)
+	}
+	for i := 0; i < b.N; i++ {
+		key := keys[i]
+		if ok := h.Store(key, hashes[i], uintptr(i)); !ok {
+			b.Fatalf("Failed to add item %d, %v", i, key)
+		}
+	}
+	//	rand.Shuffle(len(keys), func(i, j int) {
+	//		keys[i], keys[j] = keys[j], keys[i]
+	//		hashes[i], hashes[j] = hashes[j], hashes[i]
+	//	})
+	threads := 20
+	if b.N < threads {
+		threads = 1
+	}
+	b.ResetTimer()
+	ch := make(chan int, threads)
+	for i := 0; i < b.N; i += (b.N / threads) {
+		go func(start, count int) {
+			for j := start; j < (start + count); j++ {
+				v, ok, _ := h.Load(keys[j], hashes[j])
+				if !ok {
+					log.Printf("Failed to find key %v in the hashtable", keys[j])
+				}
+				if v != uintptr(j) {
+					log.Printf("Got %v instead of %v from the hashtable", v, j)
+				}
+			}
+			ch <- start
+		}(i, b.N/threads)
+	}
+	var completedThreads []int
+	for threads > 0 {
+		completed := <-ch
+		completedThreads = append(completedThreads, completed)
+		threads--
+	}
+	b.Logf("Got completed %v from %d", completedThreads, b.N)
 }
 
 var SmallTableSize = 100
@@ -348,7 +398,6 @@ func BenchmarkHashtableStore(b *testing.B) {
 
 func BenchmarkHashtableLoad(b *testing.B) {
 	b.ReportAllocs()
-	//b.N = 100 * 1000
 	h := New(2*b.N, 64)
 	keys := make([]string, b.N, b.N)
 	hashes := make([]uint64, b.N, b.N)

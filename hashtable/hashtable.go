@@ -241,6 +241,7 @@ func (h *Hashtable) find(key string, hash uint64, index int) (int, bool) {
 // while I am looking for it. I can find an item in inconsistent state
 // Find the key in the table, return the object. It is pain to pay price of
 // the atomic swap. What I want to do here?
+// There is aso a race if Load() swaps elements
 //
 // Can I assume that Load() is more frequent than Store()?
 // 'ref' can be used in the subsequent Remove() and save lookup
@@ -256,12 +257,12 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 		// swap the found item with the first in the "chain" and improve lookup for
 		//  the same element if it happens again
 		// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
-		if index0 != index {
-			tmp := *it
-			*it = h.data[index0]
-			h.data[index0] = tmp
-			h.statistics.LoadSwap += 1
-		}
+		//if index0 != index {
+		//	tmp := *it
+		//	*it = h.data[index0]
+		//	h.data[index0] = tmp
+		//	h.statistics.LoadSwap += 1
+		//}
 		return value, true, uint32(uintptr(unsafe.Pointer(it)) - uintptr(unsafe.Pointer(&h.data[0])))
 	}
 	h.statistics.LoadFailed += 1
