@@ -82,16 +82,19 @@ type Hashtable struct {
 	// Number of collisions in the table
 	collisions int
 	// Resize automatically if not zero
+	// Not used
 	ResizeFactor int
 	data         []item
-	// Not used. Mutex will be called in the LoadSync/StoreSync API
+	// Mutex will be called in the LoadSync/StoreSync API
+	// Not used
 	mutex sync.Mutex
-	// Not used. Assume 64 bits reliable
-	// The idea is that if the hash function reliable
-	// I can avoid collisions and skip comparing the key
-	RelyOnHash bool
 	// I can optimize modulo by size
 	moduloSize ModuloSize
+	// Assume 64 bits reliable
+	// The idea is that if the hash function reliable
+	// I can avoid collisions and skip comparing the key
+	// Not used
+	RelyOnHash bool
 }
 
 // size is the maximum hashtable capacity and usually is 2x-4x times larger than
@@ -163,8 +166,10 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 		// Data cache miss (and memory page miss?) sucks
 		inUse := inUse(it)
 		if !inUse {
-			// I can swap the first item in the "chain" with this item and improve lookup time for freshly inserted items
-			// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
+			// TODO How can I am sure that the newly added item is in the possible best slot
+			// for the following search? I can not just swap the elements because the best slot
+			// can be occupied by an item from a different collision chain. I limit length of the
+			// collisions chains
 			h.statistics.StoreSuccess += 1
 			it.key = key
 			it.hash = hash
@@ -246,8 +251,10 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 		h.statistics.LoadSuccess += 1
 		it := &h.data[index]
 		value = it.value
-		// Swap the found item with the first in the "chain" and improve lookup for
-		//  the same element next time
+		// If the found item is not in the perfect slot
+		// swap the found item with the first in the "chain" and improve lookup for
+		//  the same element if it happens again
+		// See https://www.sebastiansylvan.com/post/robin-hood-hashing-should-be-your-default-hash-table-implementation/
 		if index0 != index {
 			tmp := *it
 			*it = h.data[index0]
