@@ -169,7 +169,8 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 			// TODO How can I make sure that the newly added item is in the possible best slot
 			// for the following search? I can not just swap the elements because the best slot
 			// can be occupied by an item from a different collision chain. I limit length of the
-			// collisions chains.
+			// collisions chains. I can keep in the item it's distance from the perfect position
+			// this way I can swap some elements when storing
 			h.statistics.StoreSuccess += 1
 			it.key = key
 			it.hash = hash
