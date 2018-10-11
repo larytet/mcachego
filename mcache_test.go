@@ -117,7 +117,7 @@ func TestAddCustomType(t *testing.T) {
 	if !ok {
 		t.Fatalf("Failed to allocate an object from the pool")
 	}
-	myData := (*MyData)(ptr)
+	myData := (*MyData)(unsafe.Pointer(ptr))
 	myData.a = 1
 	myData.b = 2
 
@@ -127,8 +127,8 @@ func TestAddCustomType(t *testing.T) {
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
-	oAddress := unsafe.Pointer(uintptr(o) + pool.GetBase())
-	myData = (*MyData)(oAddress)
+	oAddress := uintptr(o) + pool.GetBase()
+	myData = (*MyData)(unsafe.Pointer(oAddress))
 	if myData.a != 1 || myData.b != 2 {
 		t.Fatalf("Failed to recover the original data %v", myData)
 	}
@@ -138,10 +138,10 @@ func TestAddCustomType(t *testing.T) {
 	if ok = pool.Free(oAddress); !ok {
 		t.Fatalf("Failed to free ptr %v", o)
 	}
-	if ok = pool.Free(unsafe.Pointer(pool)); ok {
+	if ok = pool.Free(uintptr(unsafe.Pointer(pool))); ok {
 		t.Fatalf("Succeeded to add illegal pointer %p", pool)
 	}
-	if ok = pool.Free(unsafe.Pointer(uintptr(0))); ok {
+	if ok = pool.Free(uintptr(unsafe.Pointer(uintptr(0)))); ok {
 		t.Fatalf("Succeeded to add illegal pointer 0")
 	}
 }
@@ -162,11 +162,11 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 		if !ok {
 			b.Fatalf("Failed to allocate an object from the pool %d", i)
 		}
-		if p == unsafe.Pointer(uintptr(0)) {
+		if p == uintptr(0) {
 			b.Fatalf("Nil is allocated from the pool %d", i)
 		}
 		if !pool.Belongs(p) {
-			b.Fatalf("Bad pointer %p is allocated from the pool", p)
+			b.Fatalf("Bad pointer %x is allocated from the pool", p)
 		}
 		if ok := cache.Store(keys[i], Object(uintptr(p)-pool.GetBase()), now); !ok {
 			b.Fatalf("Failed to add item %d", i)
@@ -179,7 +179,7 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 		if !expired {
 			b.Fatalf("Failed to evict %v", i)
 		}
-		ok := pool.Free(unsafe.Pointer(p))
+		ok := pool.Free(uintptr(p))
 		if !ok {
 			b.Fatalf("Failed to free an object %p to the pool in the iteration %d", unsafe.Pointer(p), i)
 		}
