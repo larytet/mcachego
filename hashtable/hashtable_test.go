@@ -114,7 +114,7 @@ func BenchmarkHashtableLoadMutlithread(b *testing.B) {
 		completedThreads = append(completedThreads, completed)
 		threads--
 	}
-	b.Logf("Got completed %v from %d", completedThreads, b.N)
+	//b.Logf("Got completed %v from %d", completedThreads, threads)
 }
 
 var SmallTableSize = 100
