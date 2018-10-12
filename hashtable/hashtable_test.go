@@ -88,15 +88,15 @@ func BenchmarkHashtableLoadMutlithread(b *testing.B) {
 	//		keys[i], keys[j] = keys[j], keys[i]
 	//		hashes[i], hashes[j] = hashes[j], hashes[i]
 	//	})
-	threads := 20
+	threads := runtime.NumCPU()
 	if b.N < threads {
 		threads = 1
 	}
 	ch := make(chan int, threads)
 	b.ResetTimer()
-	for i := 0; i < b.N; i += (b.N / threads) {
-		go func(start, count int) {
-			for j := start; j < (start + count); j++ {
+	for thread := 0; thread < threads; thread += 1 {
+		go func(thread int) {
+			for j := 0; j < b.N; j++ {
 				v, ok, _ := h.Load(keys[j], hashes[j])
 				if !ok {
 					log.Printf("Failed to find key %v in the hashtable", keys[j])
@@ -105,8 +105,8 @@ func BenchmarkHashtableLoadMutlithread(b *testing.B) {
 					log.Printf("Got %v instead of %v from the hashtable", v, j)
 				}
 			}
-			ch <- start
-		}(i, b.N/threads)
+			ch <- thread
+		}(thread)
 	}
 	var completedThreads []int
 	for threads > 0 {
