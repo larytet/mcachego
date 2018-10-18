@@ -136,6 +136,10 @@ func nextIndex(index int) int {
 	return index + 1
 }
 
+func (h *Hashtable) GetStatistics() Statistics {
+	return h.statistics
+}
+
 // Store a key:value pair in the hashtable
 // 'hash' can be xxhash.Sum64String(key)
 //
