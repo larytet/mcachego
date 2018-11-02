@@ -29,7 +29,7 @@ This is yet another Go cache. I need the fastest possible implementation with op
 This implementation allows 5-10M cache operations/s on a single core. Round trip "allocation from a pool - store in cache - evict from cache - free to the pool" 
 requires 350ns. A single core system theoretical peak is ~3M events/s. With packet size 64 bytes this code is expected to handle 100Mb/s line.
 
-The cache API is a thin wrapper around Go map[int32]int32 and an expiration queue. The key is a string and data is unsafe.Pointer. See TestAddCustomType() for usage.
+The cache API is a thin wrapper around a custom hashtable and an expiration queue. The key is a string and data is unsafe.Pointer. See TestAddCustomType() for usage.
 
 ## ToDo
 
