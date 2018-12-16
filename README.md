@@ -31,6 +31,19 @@ requires 350ns. A single core system theoretical peak is ~3M events/s. With pack
 
 The cache API is a thin wrapper around a custom hashtable and an expiration queue. The key is a string and data is unsafe.Pointer. See TestAddCustomType() for usage.
 
+
+## Application notes
+
+The cache keep unsafe.Pointre instead of Go references. This means that the application can not not rely on the 
+Go memory management. For example, objects stored in the cached can not be allocated from the Go heap. 
+You have two fast options:
+
+* Allocate an array of objects, keep the index in the cache. 
+* Create "unsafe" pool. 
+
+Unsafe pool New() alocates the specified number of memory blocks. The raw memory block is large enough to fit object of the specified type. 
+The pool Alloc()/Free() API operates with pointers to the blocks (at this point Go crowd runs away crying to things like https://github.com/patrickmn/go-cache). 
+
 ## ToDo
 
 I want the hash function to cluster for most popular keys. The idea is that popular lookups can fit a single 4K memory page and rarely trigger a data cache miss.
