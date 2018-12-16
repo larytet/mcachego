@@ -34,14 +34,14 @@ The cache API is a thin wrapper around a custom hashtable and an expiration queu
 
 ## Application notes
 
-The cache keep unsafe.Pointre instead of Go references. This means that the application can not not rely on the 
-Go memory management. For example, objects stored in the cached can not be allocated from the Go heap. 
+The cache keep unsafe.Pointer instead of Go references. This means that the application can not not rely on the 
+Go memory management. For example, you can not allow the Go GC to free the memory allocated for the object.  
 You have two fast options:
 
-* Allocate an array of objects, keep the index in the cache. 
-* Create "unsafe" pool. 
+* Allocate an array of objects, keep index or reference to the object in the cache. 
+* Use unsafepool. 
 
-Unsafe pool New() alocates the specified number of memory blocks. The raw memory block is large enough to fit object of the specified type. 
+Unsafe pool's New() alocates the specified number of memory blocks. The raw memory block is large enough to fit object of the specified type. 
 The pool Alloc()/Free() API operates with pointers to the blocks (at this point Go crowd runs away crying to things like https://github.com/patrickmn/go-cache). 
 
 ## ToDo
