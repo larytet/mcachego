@@ -47,6 +47,8 @@ Both approaches will target sub 100ns/operation time.
 
 ## ToDo
 
+Run linter.
+
 I want the hash function to cluster for most popular keys. The idea is that popular lookups can fit a single 4K memory page and rarely trigger a data cache miss.
 The simplest way to do this is to keep a small hashtable (cache) for the popular lookups. I can run two lookups - in the main and 
 large table and in the small cache. The small cache can implement a very simple and fast hash function. For example, use 2 first characters as a hash
