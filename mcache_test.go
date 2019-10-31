@@ -2,14 +2,15 @@ package mcache
 
 import (
 	"fmt"
-	"github.com/cespare/xxhash"
 	"hash/fnv"
-	"mcachego/unsafepool"
 	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/cespare/xxhash"
+	"github.com/larytet/mcachego/unsafepool"
 )
 
 var TTL TimeMs = 10

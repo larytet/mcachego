@@ -3,10 +3,11 @@ package mcache
 import (
 	"github.com/cespare/xxhash"
 	//	"log"
-	"mcachego/hashtable"
 	"runtime"
 	"sync"
 	"unsafe" // I need this for runtime.nanotime()
+
+	"github.com/larytet/mcachego/hashtable"
 )
 
 // I have three choices here:
