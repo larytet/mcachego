@@ -36,7 +36,7 @@ func TestItemSize(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
+	var smallCache = New(Configuration{Size: 1, TTL: TTL, LoadFactor: 100})
 	if smallCache.Len() != 0 {
 		t.Fatalf("Cache is not empty %d", smallCache.Len())
 	}
@@ -54,7 +54,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
+	var smallCache = New(Configuration{Size: 1, TTL: TTL, LoadFactor: 100})
 	start := GetTime()
 	smallCache.Store("0", 0, start)
 	_, evicted := smallCache.Evict(start, false)
@@ -79,7 +79,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestRemoveByRef(t *testing.T) {
-	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
+	var smallCache = New(Configuration{Size: 1, TTL: TTL, LoadFactor: 100})
 	smallCache.Store("0", 0, GetTime())
 	v, ref, ok := smallCache.Load("0")
 	if !ok {
@@ -97,7 +97,7 @@ func TestRemoveByRef(t *testing.T) {
 }
 
 func TestOverflow(t *testing.T) {
-	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
+	var smallCache = New(Configuration{Size: 1, TTL: TTL, LoadFactor: 100})
 	if ok := smallCache.Store("0", 0, GetTime()); !ok {
 		t.Fatalf("Failed to store value in the cache")
 	}
@@ -112,7 +112,7 @@ type MyData struct {
 }
 
 func TestAddCustomType(t *testing.T) {
-	var smallCache = New(Configuration{Size: 1, Ttl: TTL, LoadFactor: 100})
+	var smallCache = New(Configuration{Size: 1, TTL: TTL, LoadFactor: 100})
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), 1)
 	ptr, ok := pool.Alloc()
 	if !ok {
@@ -149,7 +149,7 @@ func TestAddCustomType(t *testing.T) {
 
 func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
-	cache := New(Configuration{Size: b.N, Ttl: TTL, LoadFactor: 50})
+	cache := New(Configuration{Size: b.N, TTL: TTL, LoadFactor: 50})
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), b.N)
 	now := GetTime()
 	keys := make([]string, b.N, b.N)
@@ -367,7 +367,7 @@ func BenchmarkStore(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
 	}
-	cache := New(Configuration{Size: b.N, Ttl: TTL, LoadFactor: 50})
+	cache := New(Configuration{Size: b.N, TTL: TTL, LoadFactor: 50})
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if ok := cache.Store(keys[i], Object(i), now); !ok {
@@ -384,7 +384,7 @@ func BenchmarkLoad(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
 	}
-	cache := New(Configuration{Size: b.N, Ttl: TTL, LoadFactor: 50})
+	cache := New(Configuration{Size: b.N, TTL: TTL, LoadFactor: 50})
 	for i := 0; i < b.N; i++ {
 		if ok := cache.Store(keys[i], Object(i), now); !ok {
 			b.Fatalf("Failed to add item %d", i)

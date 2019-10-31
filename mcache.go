@@ -10,7 +10,7 @@ import (
 	"github.com/larytet/mcachego/hashtable"
 )
 
-// I have three choices here:
+// Object I have three choices here:
 //  * Allow the user to specify Object type
 //  * Use type Object interface{}
 //  * Use uintptr() (truncated to "enough for anybody" 32 bits) to the user defined structures
@@ -25,15 +25,16 @@ import (
 // The user is expected to allocate pointers from a pool like UnsafePool
 type Object uint32
 
-// Can be an offset from the beginning of the operation
+// TimeMs can be an offset from the beginning of the operation
 // or truncated result of Nanotime()
 // I would use 16 bits if only I could
 type TimeMs int32
 
+// GetTime returns a time stamp
 // Application is expected to call this function to get "now". The cache API itself does
 // not perform any time related calls. Application can call GetTime only once for a
 // a bunch of operations
-// time.Now() is 45ns, runtime.nanotime is 20ns
+// time.Now() takes 45ns, runtime.nanotime is 20ns
 // I can not create an exported symbol with //go:linkname
 // I need a wrapper
 // Go does not inline functions? https://lemire.me/blog/2017/09/05/go-does-not-inline-functions-when-it-should/
@@ -43,15 +44,17 @@ func GetTime() TimeMs {
 	return res
 }
 
+// Configuration of the cache
 type Configuration struct {
 	Size       int
 	Shards     int
-	Ttl        TimeMs
+	TTL        TimeMs
 	Collisions int
 	// Try 50(%) load factor - size of Hashtable 2*Size
 	LoadFactor int
 }
 
+// Cache keeps internal data
 type Cache struct {
 	// FIFO of the items to support eviction of the expired entries
 	fifo          *itemFifo
@@ -62,6 +65,7 @@ type Cache struct {
 	configuration Configuration
 }
 
+// Statistics is a placeholder for debug counters
 type Statistics struct {
 	EvictCalled       uint64
 	EvictExpired      uint64
@@ -72,7 +76,7 @@ type Statistics struct {
 	MaxOccupancy      uint64
 }
 
-// Create a new instance of Cache
+// New creates a new instance of Cache
 // If 'shards' is zero the table will use 2*runtime.NumCPU()
 func New(configuration Configuration) *Cache {
 	c := new(Cache)
@@ -93,19 +97,19 @@ func New(configuration Configuration) *Cache {
 	c.size = (c.configuration.Size * 100) / c.configuration.LoadFactor
 	c.shards = make([]shard, configuration.Shards, configuration.Shards)
 	shardSize := c.size / configuration.Shards
-	for i, _ := range c.shards {
+	for i := range c.shards {
 		c.shards[i].table = hashtable.New(shardSize, 64)
 	}
 	c.Reset()
 	return c
 }
 
-// Occupancy
+// Len returns occupancy
 func (c *Cache) Len() int {
 	return c.fifo.Len()
 }
 
-// Accomodations
+// Size returns accomodations
 func (c *Cache) Size() int {
 	return c.fifo.size
 }
@@ -134,7 +138,7 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 	// This is very C/C++ style
 
 	// A temporary variable helps to profile the code
-	i := item{o: o, expirationMs: now + c.configuration.Ttl}
+	i := item{o: o, expirationMs: now + c.configuration.TTL}
 	iValue := *((*uintptr)(unsafe.Pointer(&i)))
 
 	hash := xxhash.Sum64String(string(key))
