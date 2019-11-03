@@ -10,7 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/cespare/xxhash"
-	"github.com/larytet/mcachego/unsafepool"
+	"github.com/larytet-go/unsafepool"
 )
 
 var TTL TimeMs = 10
