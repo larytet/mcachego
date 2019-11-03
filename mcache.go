@@ -6,7 +6,7 @@ import (
 	"sync"
 	"unsafe" // I need this for runtime.nanotime()
 
-	"github.com/larytet/mcachego/hashtable"
+	"github.com/larytet-go/hashtable"
 )
 
 // Object I have three choices here:
