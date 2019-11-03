@@ -55,7 +55,7 @@ type item struct {
 	// of the string address? What are alternatives?
 	// I can also rely on 64 bits (or 128 bits) hash instead of the key itself and
 	// do not keep the key in the table (see also RelyOnHash)
-	key string
+	key uint64
 
 	// User value. Can I assume 32 bits here?
 	value uintptr
@@ -68,7 +68,7 @@ type item struct {
 }
 
 func (i *item) reset() {
-	i.key = ""
+	i.key = 0
 	i.hash = 0
 	i.value = 0
 }
@@ -155,8 +155,8 @@ func (h *Hashtable) GetStatistics() Statistics {
 // A bonus - you choose the hash function and can switch it in the run-time.
 // See also https://github.com/golang/go/issues/21195
 // https://stackoverflow.com/questions/29662003/go-map-with-user-defined-key-with-user-defined-equality
-func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
-	h.statistics.Store += 1
+func (h *Hashtable) Store(key uint64, hash uint64, value uintptr) bool {
+	h.statistics.Store++
 	// I used a small struct HashContext with a couple of "methods" nextIndex/init/..
 	// Appears that calling "methods" impacts performance (prevents inlining in Golang ?)
 	index := h.moduloSize(hash)
@@ -175,7 +175,7 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 			// can be occupied by an item from a different collision chain. I limit length of the
 			// collisions chains. I can keep in the item it's distance from the perfect position
 			// this way I can swap some elements when storing
-			h.statistics.StoreSuccess += 1
+			h.statistics.StoreSuccess++
 			it.key = key
 			it.hash = hash
 			it.value = value
@@ -184,16 +184,16 @@ func (h *Hashtable) Store(key string, hash uint64, value uintptr) bool {
 					h.statistics.MaxCollisions = uint64(collisions)
 				}
 				// This store added one collision
-				h.collisions += 1
+				h.collisions++
 			}
 			return true
 		} else {
 			// should be a rare occasion
 			if isSameAndInUse(it, &lookIt) {
-				h.statistics.StoreMatchingKey += 1
+				h.statistics.StoreMatchingKey++
 				return false
 			}
-			h.statistics.StoreCollision += 1
+			h.statistics.StoreCollision++
 			index = nextIndex(index)
 		}
 	}
@@ -223,21 +223,21 @@ func inUse(i *item) bool {
 	return (i.hash & ITEM_IN_USE_MASK) != 0
 }
 
-func (h *Hashtable) find(key string, hash uint64, index int) (int, bool) {
+func (h *Hashtable) find(key uint64, hash uint64, index int) (int, bool) {
 	hash = hash | ITEM_IN_USE_MASK
 	lookIt := item{key: key, hash: hash}
 	for collisions := 0; collisions < h.maxCollisions; collisions++ {
 		it := &h.data[index]
 		if isSameAndInUse(it, &lookIt) {
-			h.statistics.FindSuccess += 1
+			h.statistics.FindSuccess++
 			return index, true
 		} else {
 			// should be  a rare occasion
-			h.statistics.FindCollision += 1
+			h.statistics.FindCollision++
 			index = nextIndex(index)
 		}
 	}
-	h.statistics.FindFailed += 1
+	h.statistics.FindFailed++
 	return 0, false
 }
 
@@ -250,11 +250,11 @@ func (h *Hashtable) find(key string, hash uint64, index int) (int, bool) {
 // Can I assume that Load() is more frequent than Store()?
 // 'ref' can be used in the subsequent Remove() and save lookup
 // Should I define type 'Ref'?
-func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref uint32) {
-	h.statistics.Load += 1
+func (h *Hashtable) Load(key uint64, hash uint64) (value uintptr, ok bool, ref uint32) {
+	h.statistics.Load++
 	index0 := h.moduloSize(hash)
 	if index, ok := h.find(key, hash, index0); ok {
-		h.statistics.LoadSuccess += 1
+		h.statistics.LoadSuccess++
 		it := &h.data[index]
 		value = it.value
 		// If the found item is not in the perfect slot
@@ -265,24 +265,24 @@ func (h *Hashtable) Load(key string, hash uint64) (value uintptr, ok bool, ref u
 		//	tmp := *it
 		//	*it = h.data[index0]
 		//	h.data[index0] = tmp
-		//	h.statistics.LoadSwap += 1
+		//	h.statistics.LoadSwap++
 		//}
 		return value, true, uint32(uintptr(unsafe.Pointer(it)) - uintptr(unsafe.Pointer(&h.data[0])))
 	}
-	h.statistics.LoadFailed += 1
+	h.statistics.LoadFailed++
 	return 0, false, 0
 }
 
 // Iterate through the hashtable. Firsr time use index 0
 // I want to use 32 bits ref here?
-func (h *Hashtable) GetNext(index int) (nextIndex int, value uintptr, key string, ok bool) {
+func (h *Hashtable) GetNext(index int) (nextIndex int, value uintptr, key uint64, ok bool) {
 	for i := index; i < len(h.data); i++ {
 		it := &h.data[i]
 		if inUse(it) {
 			return (i + 1), it.value, it.key, true
 		}
 	}
-	return len(h.data), 0, "", false
+	return len(h.data), 0, 0, false
 }
 
 // Fast removal by reference. Argument "ref" is an offest from the start of the allocated data
@@ -294,15 +294,15 @@ func (h *Hashtable) RemoveByRef(ref uint32) {
 	it.reset()
 }
 
-func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {
-	h.statistics.Remove += 1
+func (h *Hashtable) Remove(key uint64, hash uint64) (value uintptr, ok bool) {
+	h.statistics.Remove++
 	index0 := h.moduloSize(hash)
 	if index, ok := h.find(key, hash, index0); ok {
-		h.statistics.RemoveSuccess += 1
+		h.statistics.RemoveSuccess++
 		// Return yet another value 'collision' from find() is 10% performance for small tables
 		// TODO: what to do here?
 		if index0 != index { // collision?
-			h.collisions -= 1
+			h.collisions--
 		}
 		// TODO I can move all colliding items left and find a match
 		// faster next time.
@@ -316,7 +316,7 @@ func (h *Hashtable) Remove(key string, hash uint64) (value uintptr, ok bool) {
 		it.reset()
 		return value, true
 	}
-	h.statistics.RemoveFailed += 1
+	h.statistics.RemoveFailed++
 	return 0, false
 }
 

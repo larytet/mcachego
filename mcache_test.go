@@ -40,8 +40,8 @@ func TestAdd(t *testing.T) {
 	if smallCache.Len() != 0 {
 		t.Fatalf("Cache is not empty %d", smallCache.Len())
 	}
-	smallCache.Store("0", 0, GetTime())
-	v, _, ok := smallCache.Load("0")
+	smallCache.Store(0, 0, GetTime())
+	v, _, ok := smallCache.Load(0)
 	if !ok {
 		t.Fatalf("Failed to load value from the cache")
 	}
@@ -56,7 +56,7 @@ func TestAdd(t *testing.T) {
 func TestRemove(t *testing.T) {
 	var smallCache = New(Configuration{Size: 1, TTL: TTL, LoadFactor: 100})
 	start := GetTime()
-	smallCache.Store("0", 0, start)
+	smallCache.Store(0, 0, start)
 	_, evicted := smallCache.Evict(start, false)
 	if evicted {
 		t.Fatalf("Evicted entry before it expired")
@@ -67,7 +67,7 @@ func TestRemove(t *testing.T) {
 	if !evicted {
 		t.Fatalf("Failed to evict value from the cache")
 	}
-	_, _, ok := smallCache.Load("0")
+	_, _, ok := smallCache.Load(0)
 	if ok {
 		t.Fatalf("Failed to remove value from the cache")
 	}
@@ -80,8 +80,8 @@ func TestRemove(t *testing.T) {
 
 func TestRemoveByRef(t *testing.T) {
 	var smallCache = New(Configuration{Size: 1, TTL: TTL, LoadFactor: 100})
-	smallCache.Store("0", 0, GetTime())
-	v, ref, ok := smallCache.Load("0")
+	smallCache.Store(0, 0, GetTime())
+	v, ref, ok := smallCache.Load(0)
 	if !ok {
 		t.Fatalf("Failed to find value in the cache")
 	}
@@ -90,7 +90,7 @@ func TestRemoveByRef(t *testing.T) {
 	}
 
 	smallCache.EvictByRef(ref)
-	_, _, ok = smallCache.Load("0")
+	_, _, ok = smallCache.Load(0)
 	if ok {
 		t.Fatalf("Failed to remove value from the cache")
 	}
@@ -98,10 +98,10 @@ func TestRemoveByRef(t *testing.T) {
 
 func TestOverflow(t *testing.T) {
 	var smallCache = New(Configuration{Size: 1, TTL: TTL, LoadFactor: 100})
-	if ok := smallCache.Store("0", 0, GetTime()); !ok {
+	if ok := smallCache.Store(0, 0, GetTime()); !ok {
 		t.Fatalf("Failed to store value in the cache")
 	}
-	if ok := smallCache.Store("0", 0, GetTime()); ok {
+	if ok := smallCache.Store(0, 0, GetTime()); ok {
 		t.Fatalf("Did not fail on overflow")
 	}
 }
@@ -122,7 +122,7 @@ func TestAddCustomType(t *testing.T) {
 	myData.a = 1
 	myData.b = 2
 
-	smallCache.Store("0", Object(uintptr(ptr)-pool.GetBase()), GetTime())
+	smallCache.Store(0, Object(uintptr(ptr)-pool.GetBase()), GetTime())
 	time.Sleep(time.Duration(TTL) * time.Millisecond)
 	o, evicted := smallCache.Evict(GetTime(), false)
 	if !evicted {
@@ -152,9 +152,9 @@ func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	cache := New(Configuration{Size: b.N, TTL: TTL, LoadFactor: 50})
 	pool := unsafepool.New(reflect.TypeOf(new(MyData)), b.N)
 	now := GetTime()
-	keys := make([]string, b.N, b.N)
+	keys := make([]uint64, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
+		keys[i] = uint64(b.N - i)
 	}
 	b.ResetTimer()
 
@@ -231,7 +231,7 @@ func BenchmarkFifo(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ok := fifo.add(string(i))
+		ok := fifo.add(uint64(i))
 		if !ok {
 			b.Fatalf("Failed to add an object to the FIFO %d", i)
 		}
@@ -363,9 +363,9 @@ func BenchmarkXxhashSum64String(b *testing.B) {
 func BenchmarkStore(b *testing.B) {
 	b.ReportAllocs()
 	now := GetTime()
-	keys := make([]string, b.N, b.N)
+	keys := make([]uint64, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
+		keys[i] = uint64(b.N - i)
 	}
 	cache := New(Configuration{Size: b.N, TTL: TTL, LoadFactor: 50})
 	b.ResetTimer()
@@ -380,9 +380,9 @@ func BenchmarkStore(b *testing.B) {
 func BenchmarkLoad(b *testing.B) {
 	b.ReportAllocs()
 	now := GetTime()
-	keys := make([]string, b.N, b.N)
+	keys := make([]uint64, b.N, b.N)
 	for i := 0; i < b.N; i++ {
-		keys[i] = fmt.Sprintf("000000-%d", b.N-i)
+		keys[i] = uint64(b.N - i)
 	}
 	cache := New(Configuration{Size: b.N, TTL: TTL, LoadFactor: 50})
 	for i := 0; i < b.N; i++ {

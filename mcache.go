@@ -1,7 +1,6 @@
 package mcache
 
 import (
-	"github.com/cespare/xxhash"
 	//	"log"
 	"runtime"
 	"sync"
@@ -127,7 +126,7 @@ func (c *Cache) Reset() {
 
 // Add an object to the cache
 // This is the single most expensive function in the code - 160ns/op
-func (c *Cache) Store(key string, o Object, now TimeMs) bool {
+func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 	// Create an entry on the stack, copy 128 bits
 	// These two lines of code add 20% overhead
 	// because I use map[int]item instead of map[int]int
@@ -141,7 +140,7 @@ func (c *Cache) Store(key string, o Object, now TimeMs) bool {
 	i := item{o: o, expirationMs: now + c.configuration.TTL}
 	iValue := *((*uintptr)(unsafe.Pointer(&i)))
 
-	hash := xxhash.Sum64String(string(key))
+	hash := key
 	shardIdx := hash & c.shardsMask
 	shard := &c.shards[shardIdx]
 
@@ -169,8 +168,8 @@ type ItemRef uint64
 // Lookup in the cache
 // Application can use "ref" in calls to EvictByRef()
 // Allocation and return of ref costs 10ns/Load Should I use a dedicated API?
-func (c *Cache) Load(key string) (o Object, ref ItemRef, ok bool) {
-	hash := xxhash.Sum64String(string(key))
+func (c *Cache) Load(key uint64) (o Object, ref ItemRef, ok bool) {
+	hash := key
 	shardIdx := hash & c.shardsMask
 	shard := &c.shards[shardIdx]
 
@@ -211,7 +210,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 		// I can save hashing if I keep the hash in the FIFO
 		// I am going to call Evict() for every Store(). I assume that the Load()
 		// performance is more important
-		hash := xxhash.Sum64String(string(key))
+		hash := key
 		shardIdx := hash & c.shardsMask
 		shard := &c.shards[shardIdx]
 
@@ -266,13 +265,13 @@ type item struct {
 type itemFifo struct {
 	head int
 	tail int
-	data []string
+	data []uint64
 	size int
 }
 
 func newFifo(size int) *itemFifo {
 	s := new(itemFifo)
-	s.data = make([]string, size+1, size+1)
+	s.data = make([]uint64, size+1, size+1)
 	s.size = size
 	s.head = 0
 	s.tail = 0
@@ -288,7 +287,7 @@ func (s *itemFifo) inc(v int) int {
 	return v
 }
 
-func (s *itemFifo) add(key string) (ok bool) {
+func (s *itemFifo) add(key uint64) (ok bool) {
 	newTail := s.inc(s.tail)
 	if s.head != newTail {
 		s.data[s.tail] = key
@@ -299,7 +298,7 @@ func (s *itemFifo) add(key string) (ok bool) {
 	}
 }
 
-func (s *itemFifo) remove() (key string, ok bool) {
+func (s *itemFifo) remove() (key uint64, ok bool) {
 	newHead := s.inc(s.head)
 	if s.head != s.tail {
 		key = s.data[s.head]
@@ -314,7 +313,7 @@ func (s *itemFifo) remove() (key string, ok bool) {
 // problems if there is a race
 // s.head is modified by remove() and is an atomic operation
 // I do not care about valifity of s.tai
-func (s *itemFifo) pick() (key string, ok bool) {
+func (s *itemFifo) pick() (key uint64, ok bool) {
 	if s.head != s.tail {
 		key = s.data[s.head]
 		return key, true
