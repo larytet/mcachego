@@ -197,6 +197,13 @@ func BenchmarkTypeAssertFast(b *testing.B) {
 	}
 }
 
+func BenchmarkTypeAssertEmpty(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for k := 0; k < 1000; k++ {
+		}
+	}
+}
+
 func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
 	cache := New(Configuration{Size: b.N, TTL: TTL, LoadFactor: 50})
