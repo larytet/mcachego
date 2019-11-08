@@ -147,6 +147,56 @@ func TestAddCustomType(t *testing.T) {
 	}
 }
 
+type TestData struct {
+	i int
+	k int
+}
+
+func getIfc(data TestData) interface{} {
+	return data
+}
+
+func getMyData(b *testing.B, ifc interface{}, expected TestData) TestData {
+	data := ifc.(TestData)
+	if data.i != expected.i {
+		b.Fatalf("%d instead of %d", data.i, data.i)
+	}
+	if data.k != expected.k {
+		b.Fatalf("%d instead of %d", data.k, data.k)
+	}
+	return ifc.(TestData)
+}
+
+func getMyDataFast(ifc interface{}) TestData {
+	return ifc.(TestData)
+}
+
+func BenchmarkTypeAssert(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for k := 0; k < 1000; k++ {
+			data := TestData{i, k}
+			myIfc := getIfc(data)
+			getMyData(b, myIfc, data)
+		}
+	}
+}
+
+func BenchmarkTypeAssertFast(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for k := 0; k < 1000; k++ {
+			data := TestData{i, k}
+			myIfc := getIfc(data)
+			data = getMyDataFast(myIfc)
+			if data.i != i {
+				b.Fatalf("%d instead of %d", data.i, i)
+			}
+			if data.k != k {
+				b.Fatalf("%d instead of %d", data.k, k)
+			}
+		}
+	}
+}
+
 func BenchmarkAllocStoreEvictFree(b *testing.B) {
 	b.ReportAllocs()
 	cache := New(Configuration{Size: b.N, TTL: TTL, LoadFactor: 50})
