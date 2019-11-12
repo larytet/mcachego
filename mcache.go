@@ -204,6 +204,7 @@ func (c *Cache) EvictByRef(ref ItemRef) {
 }
 
 // Evict an expired - added before time "now" ms - entry
+// Evict() will remove at most one entry
 // If "force" is true evict the entry even if not expired
 // Use force 'true' if you want to expire all entries periodically
 func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
@@ -213,7 +214,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 	// or pick a not initialized ("") key
 	key, ok := c.fifo.Pick()
 	if ok {
-		// I can save hashing if I keep the hash in the FIFO
+		// I save hashing by keep the object hash in the FIFO instead of the object itself
 		// I am going to call Evict() for every Store(). I assume that the Load()
 		// performance is more important
 		hash := key
@@ -254,7 +255,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 	return o, expired
 }
 
-// GetStatistics returns a snap shot of debug counters
+// GetStatistics returns a snapshot of debug counters
 func (c *Cache) GetStatistics() Statistics {
 	return *c.statistics
 }
