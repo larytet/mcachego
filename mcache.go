@@ -10,6 +10,7 @@ import (
 	"github.com/larytet-go/hashtable"
 
 	// nanotime() is 2x faster than time.Now().UnixNano()
+	// I save 40ns in very call
 	"github.com/larytet-go/nanotime"
 )
 
