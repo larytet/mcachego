@@ -58,7 +58,7 @@ type Cache struct {
 	// FIFO of the items to support eviction of the expired entries
 	fifo          *itemFifo
 	size          int
-	shards        []shard
+	shards        [](*shard)
 	shardsMask    uint64
 	statistics    *Statistics
 	configuration Configuration
@@ -94,10 +94,12 @@ func New(configuration Configuration) *Cache {
 	}
 	c.configuration = configuration
 	c.size = (c.configuration.Size * 100) / c.configuration.LoadFactor
-	c.shards = make([]shard, configuration.Shards, configuration.Shards)
+	c.shards = make([]*shard, configuration.Shards, configuration.Shards)
 	shardSize := c.size / configuration.Shards
 	for i := range c.shards {
-		c.shards[i].table = hashtable.New(shardSize, 64)
+		c.shards[i] = &shard{
+			table: hashtable.New(shardSize, 64),
+		}
 	}
 	c.Reset()
 	return c
@@ -113,6 +115,7 @@ func (c *Cache) Size() int {
 	return c.fifo.size
 }
 
+// Reset removes all items from the cache
 // This API is not thread safe
 func (c *Cache) Reset() {
 	// Probably faster and more reliable is to allocate everything
@@ -124,8 +127,8 @@ func (c *Cache) Reset() {
 	c.statistics = new(Statistics)
 }
 
-// Add an object to the cache
-// This is the single most expensive function in the code - 160ns/op
+// Store adds an object to the cache
+// This is the single most expensive function in the code - 160ns/op for large tables
 func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 	// Create an entry on the stack, copy 128 bits
 	// These two lines of code add 20% overhead
@@ -142,7 +145,7 @@ func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 
 	hash := key
 	shardIdx := hash & c.shardsMask
-	shard := &c.shards[shardIdx]
+	shard := c.shards[shardIdx]
 
 	// 85% of the CPU cycles are spent here. Go lang map is rather slow
 	// Trivial map[int32]int32 requires 90ns to add an entry
@@ -160,18 +163,19 @@ func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 	return ok
 }
 
+// ItemRef is a single word
 // If ItemRef is a struct with two 64 bits fields I see 10ns overhead
 // Can I return a single 64 bits word?
 // hashtableRef can be 32 bits offset from the beginning of the hash
 type ItemRef uint64
 
-// Lookup in the cache
+// Load performs lookup in the cache
 // Application can use "ref" in calls to EvictByRef()
 // Allocation and return of ref costs 10ns/Load Should I use a dedicated API?
 func (c *Cache) Load(key uint64) (o Object, ref ItemRef, ok bool) {
 	hash := key
 	shardIdx := hash & c.shardsMask
-	shard := &c.shards[shardIdx]
+	shard := c.shards[shardIdx]
 
 	shard.mutex.RLock()
 	iValue, ok, hashtableRef := shard.table.Load(key, hash)
@@ -182,7 +186,7 @@ func (c *Cache) Load(key uint64) (o Object, ref ItemRef, ok bool) {
 	return i.o, ref, ok
 }
 
-// This API can save some CPU cycles if the application peforms
+// EvictByRef can save some CPU cycles if the application peforms
 // lot of lookup-delete cycles
 // This API breaks "eviction only by timeout" guarantee
 // TODO I can remove the entry from the eviction FIFO as well (mark as nil)
@@ -192,7 +196,7 @@ func (c *Cache) EvictByRef(ref ItemRef) {
 	hashtableRef := uint32(uint64(ref) & uint64(^uint32(0)))
 	// I can save this line (multiplication) if I compose ItemRef from the
 	// shard address instead of index
-	shard := &c.shards[shardIdx]
+	shard := c.shards[shardIdx]
 	shard.mutex.Lock()
 	shard.table.RemoveByRef(hashtableRef)
 	shard.mutex.Unlock()
@@ -201,7 +205,7 @@ func (c *Cache) EvictByRef(ref ItemRef) {
 // Evict an expired - added before time "now" ms - entry
 // If "force" is true evict the entry even if not expired
 func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
-	c.statistics.EvictCalled += 1
+	c.statistics.EvictCalled++
 	o, expired = 0, false
 	// If there is a race I will pick a removed entry or fail to pick anything
 	// or pick a not initialized ("") key
@@ -212,7 +216,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 		// performance is more important
 		hash := key
 		shardIdx := hash & c.shardsMask
-		shard := &c.shards[shardIdx]
+		shard := c.shards[shardIdx]
 
 		shard.mutex.Lock()
 
@@ -220,34 +224,35 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 			i := (*item)(unsafe.Pointer(&iValue))
 			isExpired := ((i.expirationMs - now) <= 0)
 			if isExpired || force {
-				c.statistics.EvictExpired += 1
+				c.statistics.EvictExpired++
 				if !expired {
-					c.statistics.EvictForce += 1
+					c.statistics.EvictForce++
 				}
 				c.fifo.remove()
 				shard.table.RemoveByRef(ref)
 				o = i.o
 				expired = true
 			} else {
-				c.statistics.EvictNotExpired += 1
+				c.statistics.EvictNotExpired++
 			}
 		} else {
 			// This is bad - entry is in the eviction FIFO, but not in the hashtable
 			// memory leak? Was removed not by eviction?
 			// Currently EvictByRef() does not remove entries from the eviction FIFO
-			c.statistics.EvictLookupFailed += 1
+			c.statistics.EvictLookupFailed++
 			c.fifo.remove()
 		}
 
 		shard.mutex.Unlock()
 	} else {
 		// Probably expiration FIFO is empty - nothing to do
-		c.statistics.EvictPeekFailed += 1
+		c.statistics.EvictPeekFailed++
 	}
 
 	return o, expired
 }
 
+// GetStatistics returns a snap shot of debug counters
 func (c *Cache) GetStatistics() Statistics {
 	return *c.statistics
 }
@@ -280,7 +285,7 @@ func newFifo(size int) *itemFifo {
 
 func (s *itemFifo) inc(v int) int {
 	if v < s.size {
-		v += 1
+		v++
 	} else {
 		v = 0
 	}
