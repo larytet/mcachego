@@ -4,10 +4,11 @@ import (
 	//	"log"
 	"runtime"
 	"sync"
-	"unsafe" // I need this for runtime.nanotime()
+	"unsafe"
 
 	"github.com/larytet-go/fifo64"
 	"github.com/larytet-go/hashtable"
+	"github.com/larytet-go/nanotime"
 )
 
 // Object I have three choices here:
@@ -40,7 +41,7 @@ type TimeMs int32
 // Go does not inline functions? https://lemire.me/blog/2017/09/05/go-does-not-inline-functions-when-it-should/
 // The wrapper costs 5ns per call
 func GetTime() TimeMs {
-	res := TimeMs(uint64(nanotime()) / (1000 * 1000))
+	res := TimeMs(uint64(nanotime.Now()) / (1000 * 1000))
 	return res
 }
 
@@ -268,10 +269,6 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 func (c *Cache) GetStatistics() Statistics {
 	return *c.statistics
 }
-
-//go:noescape
-//go:linkname nanotime runtime.nanotime
-func nanotime() int64
 
 // GC is going to poll the cache entries. I can try map[init]int and cast int to
 // a (unsafe?) pointer in the arrays of strings and structures.

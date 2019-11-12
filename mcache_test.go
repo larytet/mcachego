@@ -11,6 +11,7 @@ import (
 
 	"github.com/cespare/xxhash"
 	"github.com/larytet-go/fifo64"
+	"github.com/larytet-go/nanotime"
 	"github.com/larytet-go/unsafepool"
 )
 
@@ -391,7 +392,7 @@ func BenchmarkTimeNowUnixNano(b *testing.B) {
 
 func BenchmarkNanotime(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		nanotime()
+		nanotime.Now()
 	}
 }
 
