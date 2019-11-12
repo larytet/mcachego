@@ -131,9 +131,9 @@ func (c *Cache) Reset() {
 // Store adds an object to the cache
 // This is the single most expensive function in the code - 160ns/op for large tables
 func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
-	// Create an entry on the stack, copy 128 bits
+	// Create an entry on the stack, copy 64 bits
 	// These two lines of code add 20% overhead
-	// because I use map[int]item instead of map[int]int
+	// if I use map[int]item instead of map[int]int
 
 	// I can save an assignment here by using user prepared items
 	// The idea is to require using of the UnsafePool() and pad 64 bits
