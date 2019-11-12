@@ -168,6 +168,7 @@ func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 // If ItemRef is a struct with two 64 bits fields I see 10ns overhead
 // Can I return a single 64 bits word?
 // hashtableRef can be 32 bits offset from the beginning of the hash
+// TBD What if ItemRef is a struct of two 32 bits words?
 type ItemRef uint64
 
 // Load performs lookup in the cache
