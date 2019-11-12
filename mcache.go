@@ -205,6 +205,7 @@ func (c *Cache) EvictByRef(ref ItemRef) {
 
 // Evict an expired - added before time "now" ms - entry
 // If "force" is true evict the entry even if not expired
+// Use force 'true' if you want to expire all entries periodically
 func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 	c.statistics.EvictCalled++
 	o, expired = 0, false
@@ -223,8 +224,8 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 
 		if iValue, ok, ref := shard.table.Load(key, hash); ok {
 			i := (*item)(unsafe.Pointer(&iValue))
-			isExpired := ((i.expirationMs - now) <= 0)
-			if isExpired || force {
+			isExpired := force || ((i.expirationMs - now) <= 0)
+			if isExpired {
 				c.statistics.EvictExpired++
 				if !expired {
 					c.statistics.EvictForce++
