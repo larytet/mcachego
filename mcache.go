@@ -164,7 +164,7 @@ func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 	return ok
 }
 
-// ItemRef is used for direct access to the entries in cache
+// ItemRef is used for fast eviction of entries
 // If ItemRef is a struct with two 64 bits fields I see 10ns overhead
 // Can I return a single 64 bits word?
 // hashtableRef can be 32 bits offset from the beginning of the hash
