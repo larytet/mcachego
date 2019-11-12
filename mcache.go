@@ -164,12 +164,15 @@ func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 	return ok
 }
 
-// ItemRef is a single word
+// ItemRef is used for direct access to the entries in cache
 // If ItemRef is a struct with two 64 bits fields I see 10ns overhead
 // Can I return a single 64 bits word?
 // hashtableRef can be 32 bits offset from the beginning of the hash
 // TBD What if ItemRef is a struct of two 32 bits words?
-type ItemRef uint64
+type ItemRef struct {
+	tableIdx uint32
+	shardIdx uint32
+}
 
 // Load performs lookup in the cache
 // Application can use "ref" in calls to EvictByRef()
@@ -182,7 +185,10 @@ func (c *Cache) Load(key uint64) (o Object, ref ItemRef, ok bool) {
 	shard.mutex.RLock()
 	iValue, ok, hashtableRef := shard.table.Load(key, hash)
 	shard.mutex.RUnlock()
-	ref = ItemRef(uint64(hashtableRef) | (uint64(shardIdx) << 32))
+	ref = ItemRef{
+		tableIdx: hashtableRef,
+		shardIdx: uint32(shardIdx),
+	}
 
 	i := *(*item)(unsafe.Pointer(&iValue))
 	return i.o, ref, ok
@@ -194,8 +200,8 @@ func (c *Cache) Load(key uint64) (o Object, ref ItemRef, ok bool) {
 // TODO I can keep the index (or reference) to the FIFO item in the map.
 // It will alllow removing the entry from the eviction FIFO as well (mark as nil)
 func (c *Cache) EvictByRef(ref ItemRef) {
-	shardIdx := (uint64(ref) >> 32) & uint64(^uint32(0))
-	hashtableRef := uint32(uint64(ref) & uint64(^uint32(0)))
+	shardIdx := ref.shardIdx
+	hashtableRef := ref.tableIdx
 	// I can save this line (multiplication) if I compose ItemRef from the
 	// shard address instead of index
 	shard := c.shards[shardIdx]
