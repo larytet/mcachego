@@ -118,6 +118,8 @@ func (c *Cache) Size() int {
 
 // Reset removes all items from the cache
 // This API is not thread safe
+// TBD Can I allocate eveything and switch references?
+// What if the table is very large and fits the memory only once?
 func (c *Cache) Reset() {
 	// Probably faster and more reliable is to allocate everything
 	// than try to call delete()
