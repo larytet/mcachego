@@ -398,14 +398,14 @@ var globalCounter int32
 
 func BenchmarkGlobalCounter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		globalCounter += 1
+		globalCounter++
 	}
 }
 
 func BenchmarkLocalCounter(b *testing.B) {
 	var localCounter int32
 	for i := 0; i < b.N; i++ {
-		localCounter += 1
+		localCounter++
 	}
 }
 
