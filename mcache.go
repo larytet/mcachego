@@ -128,16 +128,6 @@ func (c *Cache) Reset() {
 	c.statistics = new(Statistics)
 }
 
-// Straight from https://github.com/patrickmn/go-cache
-// Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
-// If I keep the item struct small I can avoid memory pools for items
-// The benchmark is clear here: copy of a small object is better than allocation
-// from a pool and copy the pointer.
-type item struct {
-	expirationMs TimeMs
-	o            Object
-}
-
 // Store adds an object to the cache
 // This is the single most expensive function in the code - 160ns/op for large tables
 func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
@@ -280,4 +270,14 @@ func nanotime() int64
 type shard struct {
 	table *hashtable.Hashtable
 	mutex sync.RWMutex
+}
+
+// Straight from https://github.com/patrickmn/go-cache
+// Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
+// If I keep the item struct small I can avoid memory pools for items
+// The benchmark is clear here: copy of a small object is better than allocation
+// from a pool and copy the pointer.
+type item struct {
+	expirationMs TimeMs
+	o            Object
 }
