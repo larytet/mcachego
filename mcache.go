@@ -6,6 +6,7 @@ import (
 	"sync"
 	"unsafe" // I need this for runtime.nanotime()
 
+	"github.com/larytet-go/fifo64"
 	"github.com/larytet-go/hashtable"
 )
 
@@ -56,7 +57,7 @@ type Configuration struct {
 // Cache keeps internal data
 type Cache struct {
 	// FIFO of the items to support eviction of the expired entries
-	fifo          *itemFifo
+	fifo          *fifo64.Fifo
 	size          int
 	shards        [](*shard)
 	shardsMask    uint64
@@ -107,12 +108,12 @@ func New(configuration Configuration) *Cache {
 
 // Len returns occupancy
 func (c *Cache) Len() int {
-	return c.fifo.len()
+	return c.fifo.Len()
 }
 
 // Size returns accomodations
 func (c *Cache) Size() int {
-	return c.fifo.size
+	return c.fifo.Size()
 }
 
 // Reset removes all items from the cache
@@ -120,11 +121,21 @@ func (c *Cache) Size() int {
 func (c *Cache) Reset() {
 	// Probably faster and more reliable is to allocate everything
 	// than try to call delete()
-	c.fifo = newFifo(c.size)
+	c.fifo = fifo64.New(c.size)
 	for _, shard := range c.shards {
 		shard.table.Reset()
 	}
 	c.statistics = new(Statistics)
+}
+
+// Straight from https://github.com/patrickmn/go-cache
+// Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
+// If I keep the item struct small I can avoid memory pools for items
+// The benchmark is clear here: copy of a small object is better than allocation
+// from a pool and copy the pointer.
+type item struct {
+	expirationMs TimeMs
+	o            Object
 }
 
 // Store adds an object to the cache
@@ -153,8 +164,8 @@ func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 	// 120ns (400 CPU cycles)?
 	shard.mutex.Lock()
 	shard.table.Store(key, hash, iValue)
-	ok := c.fifo.add(key)
-	count := c.fifo.len()
+	ok := c.fifo.Add(key)
+	count := c.fifo.Len()
 	shard.mutex.Unlock()
 
 	if c.statistics.MaxOccupancy < uint64(count) {
@@ -209,7 +220,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 	o, expired = 0, false
 	// If there is a race I will pick a removed entry or fail to pick anything
 	// or pick a not initialized ("") key
-	key, ok := c.fifo.pick()
+	key, ok := c.fifo.Pick()
 	if ok {
 		// I can save hashing if I keep the hash in the FIFO
 		// I am going to call Evict() for every Store(). I assume that the Load()
@@ -228,7 +239,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 				if !expired {
 					c.statistics.EvictForce++
 				}
-				c.fifo.remove()
+				c.fifo.Remove()
 				shard.table.RemoveByRef(ref)
 				o = i.o
 				expired = true
@@ -240,7 +251,7 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 			// memory leak? Was removed not by eviction?
 			// Currently EvictByRef() does not remove entries from the eviction FIFO
 			c.statistics.EvictLookupFailed++
-			c.fifo.remove()
+			c.fifo.Remove()
 		}
 
 		shard.mutex.Unlock()
@@ -255,84 +266,6 @@ func (c *Cache) Evict(now TimeMs, force bool) (o Object, expired bool) {
 // GetStatistics returns a snap shot of debug counters
 func (c *Cache) GetStatistics() Statistics {
 	return *c.statistics
-}
-
-// Straight from https://github.com/patrickmn/go-cache
-// Read also https://allegro.tech/2016/03/writing-fast-cache-service-in-go.html
-// If I keep the item struct small I can avoid memory pools for items
-// The benchmark is clear here: copy of a small object is better than allocation
-// from a pool and copy the pointer.
-type item struct {
-	expirationMs TimeMs
-	o            Object
-}
-
-type itemFifo struct {
-	head int
-	tail int
-	data []uint64
-	size int
-}
-
-func newFifo(size int) *itemFifo {
-	s := new(itemFifo)
-	s.data = make([]uint64, size+1, size+1)
-	s.size = size
-	s.head = 0
-	s.tail = 0
-	return s
-}
-
-func (s *itemFifo) inc(v int) int {
-	if v < s.size {
-		v++
-	} else {
-		v = 0
-	}
-	return v
-}
-
-func (s *itemFifo) add(key uint64) (ok bool) {
-	newTail := s.inc(s.tail)
-	if s.head != newTail {
-		s.data[s.tail] = key
-		s.tail = newTail
-		return true
-	} else {
-		return false
-	}
-}
-
-func (s *itemFifo) remove() (key uint64, ok bool) {
-	newHead := s.inc(s.head)
-	if s.head != s.tail {
-		key = s.data[s.head]
-		s.head = newHead
-		return key, true
-	} else {
-		return key, false
-	}
-}
-
-// I assume that this API is "reasonably" tread safe. Will not cause
-// problems if there is a race
-// s.head is modified by remove() and is an atomic operation
-// I do not care about valifity of s.tai
-func (s *itemFifo) pick() (key uint64, ok bool) {
-	if s.head != s.tail {
-		key = s.data[s.head]
-		return key, true
-	} else {
-		return key, false
-	}
-}
-
-func (s *itemFifo) len() int {
-	if s.head <= s.tail {
-		return s.tail - s.head
-	} else {
-		return s.size - s.head + s.tail
-	}
 }
 
 //go:noescape

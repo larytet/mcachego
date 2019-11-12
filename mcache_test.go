@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/cespare/xxhash"
+	"github.com/larytet-go/fifo64"
 	"github.com/larytet-go/unsafepool"
 )
 
@@ -282,13 +283,13 @@ func BenchmarkStackAllocationMap(b *testing.B) {
 
 func BenchmarkFifo(b *testing.B) {
 	fifoSize := 10 * 1000 * 1000
-	fifo := newFifo(fifoSize)
+	fifo := fifo64.New(fifoSize)
 	b.ReportAllocs()
 	b.N = fifoSize
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ok := fifo.add(uint64(i))
+		ok := fifo.Add(uint64(i))
 		if !ok {
 			b.Fatalf("Failed to add an object to the FIFO %d", i)
 		}
