@@ -11,7 +11,6 @@ import (
 
 	"github.com/cespare/xxhash"
 	"github.com/larytet-go/fifo64"
-	"github.com/larytet-go/nanotime"
 	"github.com/larytet-go/unsafepool"
 )
 
@@ -381,18 +380,6 @@ func BenchmarkAtomicCompareAndSwap(b *testing.B) {
 	idx := int32(0)
 	for i := 0; i < b.N; i++ {
 		atomic.CompareAndSwapInt32(&idx, idx, idx+1)
-	}
-}
-
-func BenchmarkTimeNowUnixNano(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		time.Now().UnixNano()
-	}
-}
-
-func BenchmarkNanotime(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		nanotime.Now()
 	}
 }
 
