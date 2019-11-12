@@ -107,7 +107,7 @@ func New(configuration Configuration) *Cache {
 
 // Len returns occupancy
 func (c *Cache) Len() int {
-	return c.fifo.Len()
+	return c.fifo.len()
 }
 
 // Size returns accomodations
@@ -154,7 +154,7 @@ func (c *Cache) Store(key uint64, o Object, now TimeMs) bool {
 	shard.mutex.Lock()
 	shard.table.Store(key, hash, iValue)
 	ok := c.fifo.add(key)
-	count := c.fifo.Len()
+	count := c.fifo.len()
 	shard.mutex.Unlock()
 
 	if c.statistics.MaxOccupancy < uint64(count) {
@@ -327,7 +327,7 @@ func (s *itemFifo) pick() (key uint64, ok bool) {
 	}
 }
 
-func (s *itemFifo) Len() int {
+func (s *itemFifo) len() int {
 	if s.head <= s.tail {
 		return s.tail - s.head
 	} else {
