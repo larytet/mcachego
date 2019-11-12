@@ -8,6 +8,8 @@ import (
 
 	"github.com/larytet-go/fifo64"
 	"github.com/larytet-go/hashtable"
+
+	// nanotime() is 2x faster than time.Now().UnixNano()
 	"github.com/larytet-go/nanotime"
 )
 
