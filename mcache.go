@@ -190,8 +190,8 @@ func (c *Cache) Load(key uint64) (o Object, ref ItemRef, ok bool) {
 // EvictByRef can save some CPU cycles if the application peforms
 // lot of lookup-delete cycles
 // This API breaks "eviction only by timeout" guarantee
-// TODO I can remove the entry from the eviction FIFO as well (mark as nil)
-// I can keep the index (or reference) to the FIFO item in the map.
+// TODO I can keep the index (or reference) to the FIFO item in the map.
+// It will alllow removing the entry from the eviction FIFO as well (mark as nil)
 func (c *Cache) EvictByRef(ref ItemRef) {
 	shardIdx := (uint64(ref) >> 32) & uint64(^uint32(0))
 	hashtableRef := uint32(uint64(ref) & uint64(^uint32(0)))
