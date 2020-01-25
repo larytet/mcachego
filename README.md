@@ -54,6 +54,8 @@ The simplest way to do this is to keep a small hashtable (cache) for the popular
 large table and in the small cache. The small cache can implement a very simple and fast hash function. For example, use 2 first characters as a hash
 In another approach I can prepare and keep permanently hash keys for top 10K domain names 
 
+For some types of load suffix array performs better due to better locality. How can I leverage this?
+
 ## Similar projects 
 
 * https://github.com/patrickmn/go-cache
