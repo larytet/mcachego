@@ -29,7 +29,7 @@ This is yet another Go cache. I need the fastest possible implementation with op
 This implementation allows 5-10M cache operations/s on a single core. Round trip "allocation from a pool - store in cache - evict from cache - free to the pool" 
 requires 350ns. A single core system theoretical peak is ~3M events/s. With packet size 64 bytes this code is expected to handle 100Mb/s line.
 
-The cache API is a thin wrapper around a custom hashtable and an expiration queue. The key is a string and data is unsafe.Pointer. See TestAddCustomType() for usage.
+The cache API is a thin wrapper around a custom [hashtable](https://github.com/larytet-go/hashtable) and an expiration queue. The key is a string and data is unsafe.Pointer. See TestAddCustomType() for usage.
 
 
 ## Application notes
@@ -39,7 +39,7 @@ Go memory management. For example, you can not allow the Go GC to free the memor
 You have two fast options:
 
 * Allocate an array of objects, keep index or reference to the object in the cache. 
-* Use unsafepool. 
+* Use [unsafepool](https://github.com/larytet-go/unsafepool). 
 
 Unsafe pool's New() alocates the specified number of memory blocks. The raw memory block is large enough to fit object of the specified type. 
 The pool Alloc()/Free() API operates with pointers to the blocks (at this point Go crowd runs away crying to things like https://github.com/patrickmn/go-cache).
